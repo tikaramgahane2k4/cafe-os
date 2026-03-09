@@ -1,8 +1,8 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
 import { ownerRoutes } from './ownerRoutes';
+import LandingPage from '../pages/LandingPage/LandingPage';
 
 export const allRoutes = [
     ...ownerRoutes,
-    { path: '/', element: <Navigate to="/login" replace /> }
+    { path: '/', element: <LandingPage /> },
 ];
