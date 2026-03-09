@@ -1,0 +1,115 @@
+* { box-sizing: border-box; }
+
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(160deg, #FFF5E1 0%, #F5F5DC 100%);
+  font-family: 'Inter', 'Poppins', system-ui, sans-serif;
+}
+
+.login-box {
+  background: #ffffff;
+  padding: 48px 40px;
+  border-radius: 20px;
+  box-shadow: 0 8px 40px rgba(111, 78, 55, 0.15);
+  border: 1px solid #ede4da;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+}
+
+.login-logo {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.login-box h2 {
+  margin: 0 0 8px;
+  color: #3E2723;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+
+.login-subtitle {
+  color: #795548;
+  font-size: 14px;
+  margin: 0 0 32px;
+}
+
+.input-group {
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.input-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #5a3e2b;
+  margin-bottom: 6px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid #ddd0c4;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #3E2723;
+  background: #FDFAF7;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+  font-family: inherit;
+}
+
+.input-group input::placeholder {
+  color: #b39885;
+}
+
+.input-group input:focus {
+  border-color: #6F4E37;
+  box-shadow: 0 0 0 3px rgba(111, 78, 55, 0.1);
+  background: #ffffff;
+}
+
+.login-box button[type="submit"] {
+  width: 100%;
+  padding: 13px;
+  background: #6F4E37;
+  color: #FFF5E1;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  font-family: inherit;
+  box-shadow: 0 4px 14px rgba(111, 78, 55, 0.3);
+}
+
+.login-box button[type="submit"]:hover:not(:disabled) {
+  background: #5a3e2b;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(111, 78, 55, 0.4);
+}
+
+.login-box button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.error {
+  color: #c0392b;
+  font-size: 13px;
+  margin: -8px 0 12px;
+  text-align: left;
+  background: #fdf0f0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border-left: 3px solid #e74c3c;
+}

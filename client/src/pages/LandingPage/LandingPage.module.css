@@ -1,0 +1,11 @@
+.page {
+  font-family: 'Inter', 'Poppins', system-ui, sans-serif;
+  color: #3E2723;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.page main {
+  flex: 1;
+}
