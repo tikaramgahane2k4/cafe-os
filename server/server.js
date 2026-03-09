@@ -1,36 +1,42 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const bcrypt = require('bcryptjs');
-require('dotenv').config();
+const path = require('path');
+const { connectDB } = require('./config/db');
+const app = express();
+const PORT = process.env.PORT || 3010;
+connectDB();
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-const Owner = require('./models/Owner');
-const authRoutes = require('./routes/auth');
-const menuRoutes = require('./routes/menu');
+// MongoDB Connection
+// mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/cafe-os')
+//     .then(() => console.log('MongoDB connected'))
+//     .catch(err => console.error('MongoDB connection error:', err));
+
+// Routes
+const menuRoutes = require('./routes/menuRoutes');
+const authRoutes = require('./routes/authRoutes');
+const inventoryRoutes = require('./routes/inventoryRoutes');
 const staffRoutes = require('./routes/staff');
 const customerRoutes = require('./routes/customer');
 
-const app = express();
-
-app.use(cors());
-app.use(express.json());
-
-mongoose.connect(process.env.MONGO_URI)
-  .then(async () => {
-    console.log('MongoDB connected');
-    const exists = await Owner.findOne();
-    if (!exists) {
-      const hashed = await bcrypt.hash('admin123', 10);
-      await Owner.create({ name: 'Owner', email: 'admin@cafe.com', password: hashed, cafeName: 'My Cafe' });
-      console.log('Default owner created: admin@cafe.com / admin123');
-    }
-  })
-  .catch(err => console.log('MongoDB error:', err));
-
-app.use('/api/auth', authRoutes);
 app.use('/api/menu', menuRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/inventory', inventoryRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/customers', customerRoutes);
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.get('/', (req, res) => {
+    res.send('Cafe OS API is running');
+});
+
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
+
+
+

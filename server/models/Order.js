@@ -10,7 +10,7 @@ const orderSchema = new mongoose.Schema({
   }],
   total: { type: Number, required: true },
   status: { type: String, default: 'Completed', enum: ['Pending', 'Completed', 'Cancelled'] },
-  ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Owner', required: true },
+  ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true },
   createdAt: { type: Date, default: Date.now }
 });
 
