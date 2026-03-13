@@ -351,6 +351,8 @@ body { font-family: 'Segoe UI', sans-serif; }
   border-radius: 10px;
   font-weight: 600;
 }
+
+.inline-form {
   background: white;
   padding: 20px;
   border-radius: 12px;
