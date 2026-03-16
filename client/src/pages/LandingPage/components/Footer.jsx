@@ -2,7 +2,7 @@ import styles from './Footer.module.css';
 
 const Footer = () => {
   return (
-    <footer className={styles.footer}>
+    <footer className={styles.footer} id="contact">
       <div className={styles.inner}>
 
         <div className={styles.brand}>
@@ -28,9 +28,9 @@ const Footer = () => {
         <div className={styles.col}>
           <h4 className={styles.colTitle}>Company</h4>
           <ul className={styles.list}>
-            <li><a href="#">About</a></li>
-            <li><a href="#">Careers</a></li>
-            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#hero">About Cafe OS</a></li>
+            <li><a href="#features">Product Features</a></li>
+            <li><a href="#how-it-works">How It Works</a></li>
           </ul>
         </div>
 

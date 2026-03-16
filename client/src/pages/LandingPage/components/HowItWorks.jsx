@@ -12,19 +12,18 @@ const HowItWorks = () => {
     <section className={styles.section} id="how-it-works">
       <div className={styles.header}>
         <span className={styles.badge}>How It Works</span>
-        <h2 className={styles.title}>Up and running in 4 steps</h2>
+        <h2 className={styles.title}>How Cafe OS Works</h2>
         <p className={styles.subtitle}>
-          Simple onboarding — your café goes digital in minutes.
+          A simple workflow to transform your cafe operations digitally.
         </p>
       </div>
       <div className={styles.steps}>
-        {steps.map((step, index) => (
+        {steps.map((step) => (
           <div className={styles.stepCard} key={step.number}>
             <div className={styles.stepNumber}>{step.number}</div>
             <div className={styles.stepIcon}>{step.icon}</div>
             <h3 className={styles.stepTitle}>{step.title}</h3>
             <p className={styles.stepDesc}>{step.description}</p>
-            {index < steps.length - 1 && <div className={styles.connector} />}
           </div>
         ))}
       </div>

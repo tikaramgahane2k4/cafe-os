@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import styles from './Features.module.css';
 
 const features = [
@@ -29,8 +30,38 @@ const features = [
 ];
 
 const Features = () => {
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        } else {
+          setIsVisible(false);
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  const centerCard = (event) => {
+    event.currentTarget.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+      inline: 'center',
+    });
+  };
+
   return (
-    <section className={styles.features} id="features">
+    <section className={styles.features} id="features" ref={sectionRef}>
       <div className={styles.header}>
         <span className={styles.badge}>Platform Features</span>
         <h2 className={styles.title}>Everything your café needs</h2>
@@ -39,8 +70,15 @@ const Features = () => {
         </p>
       </div>
       <div className={styles.grid}>
-        {features.map((f) => (
-          <div className={styles.card} key={f.title}>
+        {features.map((f, index) => (
+          <div
+            className={`${styles.card} ${isVisible ? styles.visible : ''} ${
+              index % 2 === 0 ? styles.fromLeft : styles.fromRight
+            }`}
+            key={f.title}
+            onMouseEnter={centerCard}
+            style={{ '--enter-delay': `${index * 140}ms` }}
+          >
             <div className={styles.icon}>{f.icon}</div>
             <h3 className={styles.cardTitle}>{f.title}</h3>
             <p className={styles.cardDesc}>{f.description}</p>
