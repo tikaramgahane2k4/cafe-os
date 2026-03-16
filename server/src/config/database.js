@@ -1,8 +1,12 @@
 const mongoose = require("mongoose");
 
 const connectDB = async () => {
+  const uri = process.env.MONGO_URI || "mongodb://localhost:27017/cafe-os";
+  if (!process.env.MONGO_URI) {
+    console.warn("MONGO_URI not set. Using default:", uri);
+  }
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI, {
+    const conn = await mongoose.connect(uri, {
       serverSelectionTimeoutMS: 5000,
     });
     console.log(`MongoDB Connected: ${conn.connection.host}`);
@@ -12,5 +16,4 @@ const connectDB = async () => {
   }
 };
 
-module.exports = connectDB;
 module.exports = connectDB;

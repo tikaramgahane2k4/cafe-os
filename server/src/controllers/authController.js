@@ -11,6 +11,12 @@ const generateToken = (user) => {
   );
 };
 
+const isStrongPassword = (password) => {
+  // At least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special
+  const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+  return strongRegex.test(password);
+};
+
 // POST /api/auth/signup
 const signup = async (req, res) => {
   const { cafeName, ownerName, email, password } = req.body;
@@ -18,6 +24,13 @@ const signup = async (req, res) => {
   try {
     if (!cafeName || !ownerName || !email || !password)
       return res.status(400).json({ message: "All fields are required" });
+
+    if (!isStrongPassword(password)) {
+      return res.status(400).json({
+        message:
+          "Password must be at least 8 characters and include uppercase, lowercase, number, and special character.",
+      });
+    }
 
     const existingUser = await User.findOne({ email });
     if (existingUser)

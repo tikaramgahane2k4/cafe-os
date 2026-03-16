@@ -10,4 +10,4 @@ const staffSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Staff', staffSchema);
+module.exports = mongoose.models.Staff || mongoose.model('Staff', staffSchema);

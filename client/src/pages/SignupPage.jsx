@@ -11,16 +11,23 @@ const SignupPage = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const isStrongPassword = (password) =>
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(password);
+
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
+    if (!isStrongPassword(form.password)) {
+      setError("Password must be 8+ chars with uppercase, lowercase, number, and special character.");
+      return;
+    }
+    setLoading(true);
     try {
       const { data } = await signup(form);
       loginUser(data);
-      navigate("/owner/dashboard");
+      navigate("/owner/dashboard", { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || "Signup failed");
     } finally {
@@ -134,6 +141,9 @@ const SignupPage = () => {
                     background: "none", border: "none", cursor: "pointer", fontSize: "14px", color: "#faedcd" }}>
                   {showPassword ? "🙈" : "👁️"}
                 </button>
+              </div>
+              <div style={{ marginTop: "6px", fontSize: "11px", color: "#f3d6b3", opacity: 0.9 }}>
+                Use 8+ chars with uppercase, lowercase, number, and special character.
               </div>
             </div>
 
