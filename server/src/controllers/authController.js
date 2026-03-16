@@ -3,6 +3,7 @@ const User = require("../models/User");
 const Cafe = require("../models/Cafe");
 
 const generateToken = (user) => {
+  // include role in JWT
   return jwt.sign(
     { userId: user._id, role: user.role, cafeId: user.cafeId || null },
     process.env.JWT_SECRET,
@@ -40,14 +41,25 @@ const signup = async (req, res) => {
 const login = async (req, res) => {
   const { email, password } = req.body;
   try {
+    // 1. Find user by email
     const user = await User.findOne({ email });
-    if (!user || !(await user.matchPassword(password)))
+    
+    // 2. Compare password using bcrypt (matchPassword method on User model)
+    if (!user || !(await user.matchPassword(password))) {
       return res.status(401).json({ message: "Invalid credentials" });
+    }
 
-    const token = generateToken(user);
+    // 3. Generate JWT payload with userId and role
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // 4. Return token and user info (including role)
     res.json({
       token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role, cafeId: user.cafeId },
+      user: { id: user._id, name: user.name, email: user.email, role: user.role }
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

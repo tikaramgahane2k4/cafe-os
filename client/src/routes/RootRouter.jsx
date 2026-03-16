@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { allRoutes } from './routes.jsx';
+import { AuthProvider } from '../context/AuthContext';
 
 /**
  * RootRouter Component
@@ -12,20 +13,22 @@ import { allRoutes } from './routes.jsx';
  */
 const RootRouter = () => {
     return (
-        <BrowserRouter>
-            <Routes>
-                {allRoutes.map((route, index) => (
-                    <Route
-                        key={index}
-                        path={route.path}
-                        element={route.element}
-                    />
-                ))}
+        <AuthProvider>
+            <BrowserRouter>
+                <Routes>
+                    {allRoutes.map((route, index) => (
+                        <Route
+                            key={index}
+                            path={route.path}
+                            element={route.element}
+                        />
+                    ))}
 
-                {/* Fallback for 404 - can be moved to a separate file later */}
-                <Route path="*" element={<div>Page Not Found</div>} />
-            </Routes>
-        </BrowserRouter>
+                    {/* Fallback for 404 - can be moved to a separate file later */}
+                    <Route path="*" element={<div>Page Not Found</div>} />
+                </Routes>
+            </BrowserRouter>
+        </AuthProvider>
     );
 };
 
