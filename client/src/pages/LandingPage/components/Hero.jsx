@@ -1,7 +1,8 @@
+import { useNavigate } from 'react-router-dom';
 import styles from './Hero.module.css';
 
 const Hero = () => {
-  const handleButtonClick = () => {};
+  const navigate = useNavigate();
 
   return (
     <section className={styles.hero} id="hero">
@@ -14,10 +15,18 @@ const Hero = () => {
             and customer engagement from one clean dashboard.
           </p>
           <div className={styles.actions}>
-            <button className={styles.btnPrimary} type="button" onClick={handleButtonClick}>
+            <button
+              className={styles.btnPrimary}
+              type="button"
+              onClick={() => navigate('/login')}
+            >
               Login
             </button>
-            <button className={styles.btnSecondary} type="button" onClick={handleButtonClick}>
+            <button
+              className={styles.btnSecondary}
+              type="button"
+              onClick={() => navigate('/signup')}
+            >
               Signup
             </button>
           </div>
