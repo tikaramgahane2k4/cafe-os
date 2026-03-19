@@ -1,3 +1,4 @@
+@import "tailwindcss";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -24,6 +25,20 @@
 
 /* ── Light / dark CSS custom properties ────────────────────── */
 :root {
+  --primary-coffee: #6B3E26;
+  --primary-coffee-dark: #4B2E1E;
+  --secondary-cream: #F5E6D3;
+  --accent-caramel: #C89B6D;
+  --accent-caramel-dark: #A67C52;
+  --bg-beige: #FAF7F2;
+  --sidebar-dark: #4B2E1E;
+  --success-green: #2D6A4F;
+  --warning-yellow: #B08968;
+  --danger-red: #9B2226;
+
+  font-family: 'Inter', 'Poppins', system-ui, sans-serif;
+  background-color: var(--bg-beige);
+  color: #333;
   --bg-base:    #F5E6D3;
   --bg-card:    #FFFFFF;
   --bg-sidebar: #FFFAF7;
@@ -72,6 +87,22 @@ html.dark {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--bg-beige);
+}
+
+#root {
+  width: 100%;
+  height: 100vh;
+}
+
+.coffee-gradient {
+  background: linear-gradient(135deg, #6B3E26, #8B5E3C);
+}
+
+.coffee-gradient-hover {
+  background: linear-gradient(135deg, #4B2E1E, #6B3E26);
 }
 
 body {
@@ -218,4 +249,20 @@ input:focus, select:focus, textarea:focus {
 .saas-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
 }

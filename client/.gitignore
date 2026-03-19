@@ -14,6 +14,7 @@ lerna-debug.log*
 
 # Build
 dist
+.env
 dist-ssr
 
 # Cache

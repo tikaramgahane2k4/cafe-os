@@ -9,7 +9,7 @@ const customerSchema = new mongoose.Schema({
     date: { type: Date, default: Date.now },
     orderTotal: Number
   }],
-  ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Owner', required: true },
+  ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true },
   createdAt: { type: Date, default: Date.now }
 });
 

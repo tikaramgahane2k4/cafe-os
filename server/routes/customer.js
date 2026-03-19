@@ -11,7 +11,7 @@ router.get('/', authMiddleware, async (req, res) => {
     const customers = await Customer.find({ ownerId: req.ownerId });
     res.json(customers);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Failed to fetch customers', error: error.message });
   }
 });
 
@@ -23,7 +23,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
     const orders = await Order.find({ customerId: req.params.id, ownerId: req.ownerId }).sort({ createdAt: -1 });
     res.json({ ...customer.toObject(), orders });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Failed to fetch customer details', error: error.message });
   }
 });
 
@@ -37,7 +37,7 @@ router.post('/', authMiddleware, async (req, res) => {
     await customer.save();
     res.json(customer);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Failed to add customer', error: error.message });
   }
 });
 
@@ -60,7 +60,7 @@ router.post('/:id/orders', authMiddleware, async (req, res) => {
 
     res.json(order);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Failed to place order', error: error.message });
   }
 });
 

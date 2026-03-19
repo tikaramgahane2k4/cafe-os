@@ -16,6 +16,7 @@ app.use(
   })
 );
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // DB
 const connectDB = require("./src/config/database");

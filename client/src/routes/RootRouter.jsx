@@ -5,12 +5,9 @@ import { AuthProvider } from '../context/AuthContext';
 
 /**
  * RootRouter Component
- * 
- * This is the engine of our routing system. It iterates through the
- * 'allRoutes' registry and renders each route dynamically.
- * 
- * Team members should rarely need to modify this file.
+ * Handles all application routes
  */
+
 const RootRouter = () => {
     return (
         <AuthProvider>
