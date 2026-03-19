@@ -1,3 +1,4 @@
+const path = require("path");
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -19,12 +20,12 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // DB
-const connectDB = require("./src/config/database");
+const connectDB = require("./config/database");
 connectDB();
 
-// Auth + Admin (new system)
-const authRoutes = require("./src/routes/authRoutes");
-const adminRoutes = require("./src/routes/adminRoutes");
+// Auth (legacy owner auth)
+const authRoutes = require("./routes/auth");
+const adminRoutes = require("./routes/adminRoutes");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
@@ -53,11 +54,14 @@ app.use("/api/admin/invoices", invoiceRoutes);
 app.use("/api/tenant", tenantEntityRoutes);
 
 // Owner app routes
-const menuRoutes = require("./routes/menu");
+// Use Tanya's Menu Management routes (supports uploads + cafeId)
+const menuRoutes = require("./routes/menuRoutes");
 const staffRoutes = require("./routes/staff");
 const customerRoutes = require("./routes/customer");
+const inventoryRoutes = require("./routes/inventoryRoutes");
 
 app.use("/api/menu", menuRoutes);
+app.use("/api/inventory", inventoryRoutes);
 app.use("/api/staff", staffRoutes);
 app.use("/api/customers", customerRoutes);
 

@@ -113,10 +113,11 @@ reviewSchema.index({ tenantId: 1, rating: -1 });
 
 // ── Exports ──────────────────────────────────────────────────────────────
 module.exports = {
-  Order:         mongoose.model('Order',     orderSchema),
-  Customer:      mongoose.model('Customer',  customerSchema),
-  MenuItem:      mongoose.model('MenuItem',  menuItemSchema),
-  Staff:         mongoose.model('Staff',     staffSchema),
-  InventoryItem: mongoose.model('InventoryItem', inventorySchema),
-  Review:        mongoose.model('Review',    reviewSchema),
+  // Use distinct model names to avoid colliding with legacy single-tenant models.
+  Order:         mongoose.models.TenantOrder || mongoose.model('TenantOrder', orderSchema),
+  Customer:      mongoose.models.TenantCustomer || mongoose.model('TenantCustomer', customerSchema),
+  MenuItem:      mongoose.models.TenantMenuItem || mongoose.model('TenantMenuItem', menuItemSchema),
+  Staff:         mongoose.models.TenantStaff || mongoose.model('TenantStaff', staffSchema),
+  InventoryItem: mongoose.models.TenantInventoryItem || mongoose.model('TenantInventoryItem', inventorySchema),
+  Review:        mongoose.models.TenantReview || mongoose.model('TenantReview', reviewSchema),
 };

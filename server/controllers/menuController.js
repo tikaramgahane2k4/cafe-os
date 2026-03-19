@@ -21,13 +21,15 @@ exports.addMenuItem = async (req, res) => {
     }
 
     try {
+        const stockNum = stock === 'true' || stock === true ? 1 : 0;
         const newItem = new MenuItem({
             itemName,
             category,
             price,
             cafeId,
             image,
-            stock: stock === 'true' || stock === true,
+            stock: stockNum,
+            inStock: stockNum > 0,
         });
 
         const savedItem = await newItem.save();
@@ -44,12 +46,13 @@ exports.updateMenuItem = async (req, res) => {
     const image = req.file ? `/uploads/${req.file.filename}` : undefined;
 
     try {
+        const stockNum = stock === 'true' || stock === true ? 1 : stock === 'false' || stock === false ? 0 : undefined;
         const updateData = {
             itemName,
             category,
             price,
             cafeId,
-            stock: stock === 'true' || stock === true,
+            ...(stockNum !== undefined ? { stock: stockNum, inStock: stockNum > 0 } : {}),
         };
         if (image) updateData.image = image;
 
@@ -78,7 +81,12 @@ exports.updateStock = async (req, res) => {
     const { id } = req.params;
     const { stock } = req.body;
     try {
-        const updatedItem = await MenuItem.findByIdAndUpdate(id, { stock }, { new: true });
+        const stockNum = stock === 'true' || stock === true ? 1 : stock === 'false' || stock === false ? 0 : parseInt(stock) || 0;
+        const updatedItem = await MenuItem.findByIdAndUpdate(
+            id,
+            { stock: stockNum, inStock: stockNum > 0 },
+            { new: true }
+        );
         if (!updatedItem) return res.status(404).json({ message: 'Item not found' });
         res.status(200).json(updatedItem);
     } catch (err) {

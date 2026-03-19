@@ -1,7 +1,7 @@
 const Tenant = require('../models/Tenant');
 const ActivityLog = require('../models/ActivityLog');
-const User = require('../src/models/User');
-const Cafe = require('../src/models/Cafe');
+const User = require('../models/User');
+const Cafe = require('../models/Cafe');
 
 /* ── Credential generators ─────────────────────────────── */
 function genTenantId() {
