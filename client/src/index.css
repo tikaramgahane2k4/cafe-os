@@ -3,7 +3,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import "tailwindcss";
 
 /* ── Custom theme tokens (Tailwind v4 @theme) ───────────────── */
 @theme {
@@ -83,14 +82,14 @@ html.dark {
 }
 
 /* ── Base resets ──────────────────────────────────────────── */
-*, *::before, *::after {
+/* *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
   width: 100%;
   min-height: 100vh;
   background-color: var(--bg-beige);
-}
+} */
 
 #root {
   width: 100%;

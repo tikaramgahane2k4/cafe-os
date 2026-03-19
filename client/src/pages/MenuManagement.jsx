@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import MenuForm from '../components/MenuForm';
 
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '');
+
 const MenuManagement = () => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -60,7 +62,8 @@ const MenuManagement = () => {
     };
 
     const filteredItems = items.filter(item => {
-        const matchesSearch = item.itemName.toLowerCase().includes(searchTerm.toLowerCase());
+        const title = (item.itemName || item.name || '').toLowerCase();
+        const matchesSearch = title.includes(searchTerm.toLowerCase());
         const matchesCategory = categoryFilter === 'All' || item.category === categoryFilter;
         return matchesSearch && matchesCategory;
     });
@@ -145,13 +148,13 @@ const MenuManagement = () => {
                                             <div className="flex items-center gap-4">
                                                 <div className="h-14 w-14 rounded-2xl overflow-hidden shadow-md border-2 border-white transform group-hover:scale-110 transition-transform duration-300 bg-white flex items-center justify-center">
                                                     <img
-                                                        src={`http://localhost:3010${item.image}`}
-                                                        alt={item.itemName}
+                                                        src={`${API_BASE}${item.image}`}
+                                                        alt={item.itemName || item.name}
                                                         className="h-full w-full object-cover"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <p className="font-black text-[#4B2E1E] text-lg leading-tight group-hover:text-[#6B3E26] transition-colors">{item.itemName}</p>
+                                                    <p className="font-black text-[#4B2E1E] text-lg leading-tight group-hover:text-[#6B3E26] transition-colors">{item.itemName || item.name}</p>
                                                     <p className="text-[10px] text-[#C89B6D] font-bold mt-1 uppercase tracking-wider">ID: {item._id.slice(-8)}</p>
                                                 </div>
                                             </div>

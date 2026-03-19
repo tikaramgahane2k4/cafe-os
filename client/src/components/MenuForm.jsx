@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { X, Upload, Loader2 } from 'lucide-react';
 
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '');
+
 const MenuForm = ({ onClose, onSuccess, editingItem }) => {
     const [formData, setFormData] = useState({
         itemName: '',
@@ -24,7 +26,7 @@ const MenuForm = ({ onClose, onSuccess, editingItem }) => {
                 stock: editingItem.stock,
                 cafeId: editingItem.cafeId,
             });
-            setImagePreview(`http://localhost:3010${editingItem.image}`);
+            setImagePreview(`${API_BASE}${editingItem.image}`);
         }
     }, [editingItem]);
 
@@ -52,6 +54,12 @@ const MenuForm = ({ onClose, onSuccess, editingItem }) => {
         e.preventDefault();
         setIsSubmitting(true);
         setError('');
+
+        if (!editingItem && !imageFile) {
+            setError('Please upload an image');
+            setIsSubmitting(false);
+            return;
+        }
 
         const data = new FormData();
         data.append('itemName', formData.itemName);

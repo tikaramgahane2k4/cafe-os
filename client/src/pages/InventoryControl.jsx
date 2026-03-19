@@ -15,9 +15,9 @@ import {
     Loader2
 } from 'lucide-react';
 import React, { useState, useMemo, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 
-const API_BASE_URL = 'http://localhost:3010/api';
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '');
 
 const InventoryControl = () => {
     const [inventory, setInventory] = useState([]);
@@ -40,7 +40,7 @@ const InventoryControl = () => {
     const fetchInventory = async () => {
         try {
             setLoading(true);
-            const response = await axios.get(`${API_BASE_URL}/inventory`);
+            const response = await api.get('/inventory');
             setInventory(response.data);
             setError(null);
         } catch (err) {
@@ -94,7 +94,7 @@ const InventoryControl = () => {
     const saveStockUpdate = async () => {
         try {
             setUpdating(true);
-            const response = await axios.patch(`${API_BASE_URL}/inventory/${selectedItem._id}`, {
+            const response = await api.patch(`/inventory/${selectedItem._id}`, {
                 stock: newStock
             });
 
@@ -115,7 +115,7 @@ const InventoryControl = () => {
     const saveItemEdit = async () => {
         try {
             setUpdating(true);
-            const response = await axios.put(`${API_BASE_URL}/menu/${selectedItem._id}`, {
+            const response = await api.put(`/menu/${selectedItem._id}`, {
                 ...editForm,
                 cafeId: selectedItem.cafeId,
                 stock: selectedItem.stock > 0 // Keep stock boolean for general menu update if needed
@@ -137,7 +137,7 @@ const InventoryControl = () => {
 
     const markOutOfStock = async (id) => {
         try {
-            const response = await axios.patch(`${API_BASE_URL}/inventory/${id}`, {
+            const response = await api.patch(`/inventory/${id}`, {
                 stock: 0
             });
 
@@ -272,8 +272,8 @@ const InventoryControl = () => {
                                         <div className="h-14 w-14 rounded-2xl overflow-hidden border-2 border-white shadow-md bg-white flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
                                             {item.image ? (
                                                 <img
-                                                    src={item.image.startsWith('http') ? item.image : `http://localhost:3010${item.image.startsWith('/') ? '' : '/'}${item.image}`}
-                                                    alt={item.itemName}
+                                                    src={item.image.startsWith('http') ? item.image : `${API_BASE}${item.image.startsWith('/') ? '' : '/'}${item.image}`}
+                                                    alt={item.itemName || item.name}
                                                     className="h-full w-full object-cover"
                                                     onError={(e) => {
                                                         e.target.onerror = null;
@@ -286,7 +286,7 @@ const InventoryControl = () => {
                                         </div>
                                     </td>
                                     <td className="px-8 py-4">
-                                        <div className="font-black text-[#4B2E1E] text-base leading-tight">{item.itemName}</div>
+                                        <div className="font-black text-[#4B2E1E] text-base leading-tight">{item.itemName || item.name}</div>
                                         <div className="text-[10px] text-[#C89B6D] font-bold mt-1 uppercase tracking-wider">ID: {item._id.slice(-6)} • Cafe {item.cafeId}</div>
                                     </td>
                                     <td className="px-8 py-4">
@@ -369,13 +369,13 @@ const InventoryControl = () => {
                             <div className="flex items-center gap-5 bg-[#FAF7F2] p-5 rounded-2xl border border-[#F5E6D3]">
                                 <div className="h-16 w-16 rounded-xl overflow-hidden flex-shrink-0 bg-white shadow-md border-2 border-white flex items-center justify-center">
                                     {selectedItem.image ? (
-                                        <img src={selectedItem.image.startsWith('http') ? selectedItem.image : `http://localhost:3010${selectedItem.image.startsWith('/') ? '' : '/'}${selectedItem.image}`} alt={selectedItem.itemName} className="h-full w-full object-cover" />
+                                        <img src={selectedItem.image.startsWith('http') ? selectedItem.image : `${API_BASE}${selectedItem.image.startsWith('/') ? '' : '/'}${selectedItem.image}`} alt={selectedItem.itemName || selectedItem.name} className="h-full w-full object-cover" />
                                     ) : (
                                         <Package size={28} className="text-[#F5E6D3]" />
                                     )}
                                 </div>
                                 <div>
-                                    <div className="font-black text-xl text-[#4B2E1E] leading-tight">{selectedItem.itemName}</div>
+                                    <div className="font-black text-xl text-[#4B2E1E] leading-tight">{selectedItem.itemName || selectedItem.name}</div>
                                     <div className="text-sm font-bold text-[#C89B6D] mt-1">Current Stock: <span className="text-[#6B3E26] font-black">{selectedItem.stock}</span></div>
                                 </div>
                             </div>

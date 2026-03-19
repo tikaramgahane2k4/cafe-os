@@ -11,7 +11,7 @@ import {
     Heart
 } from 'lucide-react';
 
-const DashboardLayout = () => {
+const DashboardLayout = ({ children, showHeader = true }) => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
@@ -78,27 +78,29 @@ const DashboardLayout = () => {
                 {/* Background decorative elements */}
                 <div className="absolute top-0 right-0 w-96 h-96 bg-[#F5E6D3]/30 rounded-full -mr-48 -mt-48 blur-3xl -z-10"></div>
 
-                <header className="bg-white/80 backdrop-blur-md border-b border-[#F5E6D3] h-20 flex items-center justify-between px-10 z-10">
-                    <div className="flex flex-col">
-                        <h2 className="text-2xl font-bold text-[#4B2E1E]">
-                            {navItems.find(item => item.path === window.location.pathname)?.name || 'Admin Panel'}
-                        </h2>
-                        <div className="h-1 w-8 bg-[#C89B6D] rounded-full mt-1"></div>
-                    </div>
+                {showHeader && (
+                    <header className="bg-white/80 backdrop-blur-md border-b border-[#F5E6D3] h-20 flex items-center justify-between px-10 z-10">
+                        <div className="flex flex-col">
+                            <h2 className="text-2xl font-bold text-[#4B2E1E]">
+                                {navItems.find(item => item.path === window.location.pathname)?.name || 'Admin Panel'}
+                            </h2>
+                            <div className="h-1 w-8 bg-[#C89B6D] rounded-full mt-1"></div>
+                        </div>
 
-                    <div className="flex items-center gap-5">
-                        <div className="text-right hidden sm:block">
-                            <p className="text-sm font-bold text-[#4B2E1E] leading-none mb-1">Welcome back</p>
-                            <span className="text-xs font-medium text-[#C89B6D]">{user?.email}</span>
+                        <div className="flex items-center gap-5">
+                            <div className="text-right hidden sm:block">
+                                <p className="text-sm font-bold text-[#4B2E1E] leading-none mb-1">Welcome back</p>
+                                <span className="text-xs font-medium text-[#C89B6D]">{user?.email}</span>
+                            </div>
+                            <div className="h-12 w-12 rounded-2xl bg-[#6B3E26] flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-[#6B3E26]/20 border-2 border-white ring-2 ring-[#F5E6D3] transition-transform hover:scale-105 cursor-pointer">
+                                {user?.email?.charAt(0).toUpperCase()}
+                            </div>
                         </div>
-                        <div className="h-12 w-12 rounded-2xl bg-[#6B3E26] flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-[#6B3E26]/20 border-2 border-white ring-2 ring-[#F5E6D3] transition-transform hover:scale-105 cursor-pointer">
-                            {user?.email?.charAt(0).toUpperCase()}
-                        </div>
-                    </div>
-                </header>
+                    </header>
+                )}
 
                 <div className="p-10 overflow-auto flex-1 animate-fade-in">
-                    <Outlet />
+                    {children ?? <Outlet />}
                 </div>
             </main>
         </div>

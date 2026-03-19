@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+const rawBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const baseURL = rawBase.replace(/\/$/, '').endsWith('/api')
+    ? rawBase.replace(/\/$/, '')
+    : `${rawBase.replace(/\/$/, '')}/api`;
+
 const instance = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+    baseURL,
 });
 
 // Add a request interceptor to add the token to headers
