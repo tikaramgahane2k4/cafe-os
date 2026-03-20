@@ -1,6 +1,6 @@
 import React from "react";
 import ProtectedRoute from "../components/ProtectedRoute";
-import Dashboard from "../pages/superAdmin/Dashboard";
+import Dashboard from "../pages/admin/Dashboard";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import TenantManagement from "../pages/admin/TenantManagement";
 import SubscriptionManagement from "../pages/admin/SubscriptionManagement";

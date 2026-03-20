@@ -1,5 +1,5 @@
 import Sidebar from "../../components/superAdmin/Sidebar";
-import StatsCard from "../../components/superAdmin/StatsCard";
+import StatsCard from "../../components/StatsCard";
 import TenantTable from "../../components/superAdmin/TenantTable";
 import FeatureToggle from "../../components/superAdmin/FeatureToggle";
 
