@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api/axios';
+import api from '../../api/axios';
 import {
     Plus,
     Search,
@@ -10,7 +10,7 @@ import {
     MoreVertical,
     Filter
 } from 'lucide-react';
-import MenuForm from '../components/MenuForm';
+import MenuForm from '../../components/MenuForm';
 
 const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '');
 

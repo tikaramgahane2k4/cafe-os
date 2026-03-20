@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api/axios';
+import api from '../../api/axios';
 import { Search, MapPin, Calendar, Star, History, ShoppingBag, Plus, X, Phone, Mail, Coffee } from 'lucide-react';
 
 const CustomerCRM = () => {

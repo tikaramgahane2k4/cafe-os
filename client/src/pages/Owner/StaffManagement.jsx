@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api/axios';
+import api from '../../api/axios';
 import { Plus, Search, Edit2, Trash2, Shield, UserCircle, Phone, Mail, X } from 'lucide-react';
 
 const ALL_PERMISSIONS = ['View Menu', 'Edit Menu', 'View Orders', 'Manage Orders', 'View Customers', 'View Staff'];
