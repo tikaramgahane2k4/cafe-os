@@ -16,9 +16,9 @@ export const login = (data) => API.post("/auth/login", data);
 export const getProfile = () => API.get("/auth/profile");
 
 const api = {
-  // Menu
-  getMenuItems: async () => {
-    const res = await fetch(`${API_URL}/menu`, { headers: { Authorization: `Bearer ${getToken()}` } });
+  getMenuItems: async (cafeId) => {
+    const url = cafeId ? `${API_URL}/menu?cafeId=${cafeId}` : `${API_URL}/menu`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${getToken()}` } });
     return res.json();
   },
   addMenuItem: async (item) => {

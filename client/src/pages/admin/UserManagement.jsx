@@ -7,13 +7,13 @@ import toast from 'react-hot-toast';
 
 // Canonical RBAC permissions — mirrors the server model
 const ROLE_PERMISSIONS = {
-  SuperAdmin:   ['manageTenants','manageSubscriptions','manageFeatureFlags','manageUsers','viewAnalytics','viewActivityLogs'],
-  Admin:        ['manageTenants','manageSubscriptions','viewAnalytics'],
-  SupportStaff: ['viewTenants','viewAnalytics'],
+  SuperAdmin: ['manageTenants', 'manageSubscriptions', 'manageFeatureFlags', 'manageUsers', 'viewAnalytics', 'viewActivityLogs'],
+  Admin: ['manageTenants', 'manageSubscriptions', 'viewAnalytics'],
+  SupportStaff: ['viewTenants', 'viewAnalytics'],
 };
 const PERM_ICONS = {
-  manageTenants:'🏪', manageSubscriptions:'💳', manageFeatureFlags:'⚑',
-  manageUsers:'👤', viewAnalytics:'📈', viewActivityLogs:'📋', viewTenants:'👁️',
+  manageTenants: '🏪', manageSubscriptions: '💳', manageFeatureFlags: '⚑',
+  manageUsers: '👤', viewAnalytics: '📈', viewActivityLogs: '📋', viewTenants: '👁️',
 };
 
 const emptyForm = { name: '', email: '', password: '', role: 'SupportStaff', status: 'Active' };
@@ -21,13 +21,14 @@ const inp = { width: '100%', background: 'var(--bg-base)', border: '1px solid va
 const lbl = { fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 5 };
 
 export default function UserManagement() {
-  const [users,    setUsers]    = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState(null);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [form,     setForm]     = useState(emptyForm);
-  const [editId,   setEditId]   = useState(null);
-  const [saving,   setSaving]   = useState(false);
+  const [form, setForm] = useState(emptyForm);
+  const [editId, setEditId] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
 
   const load = useCallback(() => {
     setLoading(true);
@@ -47,9 +48,21 @@ export default function UserManagement() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id, name) => {
-    if (!window.confirm(`Delete user "${name}"? This cannot be undone.`)) return;
-    try { await deleteUser(id); toast.success('User deleted'); load(); } catch (e) { toast.error(e.message); }
+  const handleDelete = (id, name) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete User',
+      message: `Delete user "${name}"? This cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await deleteUser(id);
+          toast.success('User deleted');
+          load();
+        } catch (e) {
+          toast.error(e.message);
+        }
+      }
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -71,7 +84,7 @@ export default function UserManagement() {
   const permsPreview = ROLE_PERMISSIONS[form.role] || [];
 
   // Stats
-  const activeCount    = users.filter((u) => (u.status || (u.isActive ? 'Active' : 'Inactive')) === 'Active').length;
+  const activeCount = users.filter((u) => (u.status || (u.isActive ? 'Active' : 'Inactive')) === 'Active').length;
   const suspendedCount = users.filter((u) => (u.status || '') === 'Suspended').length;
 
   return (
@@ -94,9 +107,9 @@ export default function UserManagement() {
       {!loading && users.length > 0 && (
         <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
           {[
-            { label: 'Total Users',    value: users.length,    color: 'var(--text-2)', bg: 'var(--bg-hover)' },
-            { label: 'Active',         value: activeCount,     color: '#22c55e',       bg: 'rgba(34,197,94,0.1)' },
-            { label: 'Suspended',      value: suspendedCount,  color: '#ef4444',       bg: 'rgba(239,68,68,0.1)' },
+            { label: 'Total Users', value: users.length, color: 'var(--text-2)', bg: 'var(--bg-hover)' },
+            { label: 'Active', value: activeCount, color: '#22c55e', bg: 'rgba(34,197,94,0.1)' },
+            { label: 'Suspended', value: suspendedCount, color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
           ].map(({ label, value, color, bg }) => (
             <div key={label} style={{ background: bg, borderRadius: 10, padding: '10px 18px', textAlign: 'center', minWidth: 100 }}>
               <div style={{ fontSize: 22, fontWeight: 800, color }}>{value}</div>
@@ -140,14 +153,14 @@ export default function UserManagement() {
               <div>
                 <label style={lbl}>Role</label>
                 <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} style={inp}>
-                  {['SuperAdmin','Admin','SupportStaff'].map((r) => <option key={r} value={r}>{r}</option>)}
+                  {['SuperAdmin', 'Admin', 'SupportStaff'].map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
               {editId && (
                 <div>
                   <label style={lbl}>Status</label>
                   <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} style={inp}>
-                    {['Active','Inactive','Suspended'].map((s) => <option key={s} value={s}>{s}</option>)}
+                    {['Active', 'Inactive', 'Suspended'].map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
               )}
@@ -188,6 +201,19 @@ export default function UserManagement() {
           onEdit={handleEdit}
           onDelete={handleDelete}
         />
+      )}
+      {/* Confirm Dialog */}
+      {confirmDialog.isOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(2px)' }}>
+          <div style={{ background: 'var(--bg-card)', width: '100%', maxWidth: 360, borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border)', padding: 24, boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-1)', marginBottom: 8, marginTop: 0 }}>{confirmDialog.title}</h3>
+            <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-3)', marginBottom: 24 }}>{confirmDialog.message}</p>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button onClick={() => setConfirmDialog({ ...confirmDialog, isOpen: false })} style={{ flex: 1, padding: '10px', background: 'var(--bg-hover)', color: 'var(--text-2)', border: '1px solid var(--border)', borderRadius: 10, fontWeight: 700, cursor: 'pointer', transition: '0.2s' }}>Cancel</button>
+              <button onClick={() => { confirmDialog.onConfirm(); setConfirmDialog({ ...confirmDialog, isOpen: false }); }} style={{ flex: 1, padding: '10px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', transition: '0.2s', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)' }}>Delete</button>
+            </div>
+          </div>
+        </div>
       )}
     </AdminLayout>
   );

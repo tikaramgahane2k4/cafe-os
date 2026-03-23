@@ -7,6 +7,12 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: { type: String, enum: ["superadmin", "owner"], default: "owner" },
   cafeId: { type: mongoose.Schema.Types.ObjectId, ref: "Cafe", default: null },
+  locationSettings: {
+    latitude: { type: Number, default: null },
+    longitude: { type: Number, default: null },
+    radius: { type: Number, default: 100 },
+    enabled: { type: Boolean, default: false }
+  },
   createdAt: { type: Date, default: Date.now },
 });
 

@@ -51,7 +51,7 @@ router.post('/signup', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
     const owner = await Owner.findOne({ email });
     if (!owner) {
       const user = await User.findOne({ email });
@@ -87,7 +87,7 @@ router.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign({ id: owner._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    
+
     res.json({
       token,
       user: {
@@ -103,5 +103,36 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Get Owner Location Settings
+router.get('/owner/:id/locationSettings', async (req, res) => {
+  try {
+    const owner = await Owner.findById(req.params.id);
+    if (!owner) return res.status(404).json({ message: 'Owner not found' });
+    res.json(owner.locationSettings || { enabled: false, radius: 100 });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Update Owner Location Settings
+router.put('/owner/:id/locationSettings', async (req, res) => {
+  try {
+    const { latitude, longitude, radius, enabled } = req.body;
+    const owner = await Owner.findById(req.params.id);
+    if (!owner) return res.status(404).json({ message: 'Owner not found' });
+
+    owner.locationSettings = {
+      latitude: latitude !== undefined ? latitude : owner.locationSettings?.latitude,
+      longitude: longitude !== undefined ? longitude : owner.locationSettings?.longitude,
+      radius: radius !== undefined ? radius : (owner.locationSettings?.radius || 100),
+      enabled: enabled !== undefined ? enabled : (owner.locationSettings?.enabled || false)
+    };
+
+    await owner.save();
+    res.json(owner.locationSettings);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 module.exports = router;

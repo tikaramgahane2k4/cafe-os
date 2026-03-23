@@ -2,7 +2,9 @@ const MenuItem = require('../models/MenuItem');
 
 const getAllInventory = async (req, res) => {
     try {
-        const inventory = await MenuItem.find().sort({ itemName: 1 });
+        const { cafeId } = req.query;
+        const query = cafeId ? { cafeId } : {};
+        const inventory = await MenuItem.find(query).sort({ itemName: 1 });
         res.status(200).json(inventory);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching inventory', error: error.message });

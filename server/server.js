@@ -24,7 +24,7 @@ const connectDB = require("./config/database");
 connectDB();
 
 // Auth (legacy owner auth)
-const authRoutes = require("./routes/auth");
+const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 
 app.use("/api/auth", authRoutes);
@@ -59,11 +59,13 @@ const menuRoutes = require("./routes/menuRoutes");
 const staffRoutes = require("./routes/staff");
 const customerRoutes = require("./routes/customer");
 const inventoryRoutes = require("./routes/inventoryRoutes");
+const tableRoutes = require("./routes/tableRoutes");
 
 app.use("/api/menu", menuRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/staff", staffRoutes);
 app.use("/api/customers", customerRoutes);
+app.use("/api/tables", tableRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {

@@ -72,8 +72,10 @@ const SignupPage = () => {
             <p style={{ color: "#a68a64", fontSize: "12px", marginTop: "6px", lineHeight: 1.6 }}>
               Start managing your cafe<br />smarter today
             </p>
-            <div style={{ marginTop: "14px", background: "rgba(127,85,57,0.1)", borderRadius: "12px",
-              padding: "10px 14px", border: "1px solid #d4a373" }}>
+            <div style={{
+              marginTop: "14px", background: "rgba(127,85,57,0.1)", borderRadius: "12px",
+              padding: "10px 14px", border: "1px solid #d4a373"
+            }}>
               <p style={{ color: "#7f5539", fontSize: "12px", fontWeight: "700" }}>🎉 14-day free trial</p>
               <p style={{ color: "#a68a64", fontSize: "11px", marginTop: "3px" }}>No credit card required</p>
             </div>
@@ -87,10 +89,12 @@ const SignupPage = () => {
           justifyContent: "center", padding: "36px 40px 36px 52px",
           position: "relative"
         }}>
-          <div style={{ position: "absolute", top: "20px", right: "24px",
+          <div style={{
+            position: "absolute", top: "20px", right: "24px",
             width: "40px", height: "40px", background: "#a68a64",
             borderRadius: "50%", display: "flex", alignItems: "center",
-            justifyContent: "center", fontSize: "18px" }}>☕</div>
+            justifyContent: "center", fontSize: "18px"
+          }}>☕</div>
 
           <h1 style={{ fontSize: "20px", fontWeight: "800", lineHeight: 1.35, marginBottom: "4px" }}>
             <span style={{ color: "#faedcd" }}>Create Account,</span>
@@ -99,8 +103,10 @@ const SignupPage = () => {
           </h1>
 
           {error && (
-            <div style={{ background: "rgba(255,80,80,0.2)", border: "1px solid rgba(255,80,80,0.4)",
-              color: "#ffaaaa", borderRadius: "8px", padding: "8px 12px", fontSize: "12px", marginTop: "8px" }}>
+            <div style={{
+              background: "rgba(255,80,80,0.2)", border: "1px solid rgba(255,80,80,0.4)",
+              color: "#ffaaaa", borderRadius: "8px", padding: "8px 12px", fontSize: "12px", marginTop: "8px"
+            }}>
               {error}
             </div>
           )}
@@ -137,8 +143,10 @@ const SignupPage = () => {
                   onFocus={e => { e.target.style.borderColor = "#faedcd"; e.target.style.background = "#956048" }}
                   onBlur={e => { e.target.style.borderColor = "#c4a882"; e.target.style.background = "#a68a64" }} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)",
-                    background: "none", border: "none", cursor: "pointer", fontSize: "14px", color: "#faedcd" }}>
+                  style={{
+                    position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)",
+                    background: "none", border: "none", cursor: "pointer", fontSize: "14px", color: "#faedcd"
+                  }}>
                   {showPassword ? "🙈" : "👁️"}
                 </button>
               </div>
@@ -148,9 +156,11 @@ const SignupPage = () => {
             </div>
 
             <button type="submit" disabled={loading}
-              style={{ width: "100%", padding: "12px", background: "#faedcd", color: "#7f5539",
+              style={{
+                width: "100%", padding: "12px", background: "#faedcd", color: "#7f5539",
                 border: "none", borderRadius: "50px", fontSize: "14px", fontWeight: "700",
-                cursor: loading ? "not-allowed" : "pointer", transition: "all 0.2s", marginTop: "4px" }}
+                cursor: loading ? "not-allowed" : "pointer", transition: "all 0.2s", marginTop: "4px"
+              }}
               onMouseOver={e => { if (!loading) e.target.style.background = "#f0ddb8" }}
               onMouseOut={e => { if (!loading) e.target.style.background = "#faedcd" }}
             >

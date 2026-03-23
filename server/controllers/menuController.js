@@ -4,7 +4,9 @@ const path = require('path');
 // @desc    Get all menu items
 exports.getMenuItems = async (req, res) => {
     try {
-        const items = await MenuItem.find();
+        const { cafeId } = req.query;
+        const query = cafeId ? { cafeId } : {};
+        const items = await MenuItem.find(query);
         res.status(200).json(items);
     } catch (err) {
         res.status(500).json({ message: err.message });
