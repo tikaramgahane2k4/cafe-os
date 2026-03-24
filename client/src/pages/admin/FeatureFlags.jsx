@@ -1,129 +1,158 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import FeatureToggleComp from '../../components/admin/FeatureToggle';
-import { fetchFeatures, fetchPlans, fetchTenants } from '../../services/adminApi';
-import { PageSpinner, ErrorBanner, EmptyState } from '../../components/admin/SkeletonLoader';
+import { ErrorBanner, PageSpinner } from '../../components/admin/SkeletonLoader';
+import PageHeader from '../../components/layout/PageHeader';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import EmptyState from '../../components/ui/EmptyState';
+import MetricCard from '../../components/ui/MetricCard';
+import { fetchFeatures, fetchPlans } from '../../services/adminApi';
+
+const ENVIRONMENTS = [
+  { key: 'dev', label: 'Dev' },
+  { key: 'staging', label: 'Staging' },
+  { key: 'production', label: 'Production' },
+];
+
+const FEATURE_FLAG_PLAN_LABELS = ['Starter', 'Pro', 'Elite'];
+const FEATURE_FLAG_PLAN_MAP = {
+  Free: 'Starter',
+  Starter: 'Starter',
+  Growth: 'Pro',
+  Pro: 'Pro',
+  Enterprise: 'Elite',
+  Elite: 'Elite',
+};
+
+function normalizeFeatureFlagPlan(planName = '') {
+  return FEATURE_FLAG_PLAN_MAP[String(planName || '').trim()] || String(planName || '').trim();
+}
 
 export default function FeatureFlags() {
-  const [features, setFeatures]     = useState([]);
-  const [plans,    setPlans]        = useState([]);
-  const [tenants,  setTenants]      = useState([]);
-  const [loading,  setLoading]      = useState(true);
-  const [error,    setError]        = useState(null);
+  const [features, setFeatures] = useState([]);
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [environment, setEnvironment] = useState('production');
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
     setLoading(true);
-    Promise.all([fetchFeatures(), fetchPlans(), fetchTenants()])
-      .then(([fRes, pRes, tRes]) => {
-        setFeatures(fRes.data ?? []);
-        setPlans((pRes.data ?? []).map((p) => p.planName));
-        setTenants(tRes.data ?? []);
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
+    setError(null);
 
-  useEffect(() => { load(); }, [load]);
+    try {
+      const [featureResponse, planResponse] = await Promise.all([
+        fetchFeatures({ environment }),
+        fetchPlans(),
+      ]);
 
-  const handleUpdate = (updated) => {
-    setFeatures((prev) => prev.map((f) => (f._id === updated._id ? updated : f)));
+      setFeatures(featureResponse.data || []);
+      const normalizedPlans = [...new Set(
+        (planResponse.data || [])
+          .map((plan) => normalizeFeatureFlagPlan(plan.planName))
+          .filter((planName) => FEATURE_FLAG_PLAN_LABELS.includes(planName)),
+      )];
+      setPlans(normalizedPlans.length ? normalizedPlans : FEATURE_FLAG_PLAN_LABELS);
+    } catch (fetchError) {
+      console.error('[FeatureFlags] Failed to load features', fetchError);
+      setError(fetchError.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [environment]);
+
+  useEffect(() => {
     load();
+  }, [load]);
+
+  const handleUpdate = (updatedFeature) => {
+    setFeatures((current) => current.map((feature) => (
+      feature._id === updatedFeature._id ? updatedFeature : feature
+    )));
   };
 
-  // Stats
-  const globalCount   = features.filter((f) => f.globalEnabled).length;
-  const planScoped    = features.filter((f) => !f.globalEnabled && (f.plansEnabled?.length || 0) > 0).length;
-  const overridedOnly = features.filter((f) => !f.globalEnabled && !(f.plansEnabled?.length) && (f.tenantOverrides?.length || 0) > 0).length;
-  const offCount      = features.filter((f) => !f.globalEnabled && !(f.plansEnabled?.length) && !(f.tenantOverrides?.length)).length;
+  const stats = useMemo(() => ({
+    total: features.length,
+    active: features.filter((feature) => feature.status === 'active').length,
+    partial: features.filter((feature) => feature.status === 'partial').length,
+    disabled: features.filter((feature) => feature.status === 'disabled').length,
+    blocked: features.filter((feature) => feature.blockedByDependencies).length,
+  }), [features]);
 
   return (
     <AdminLayout>
-      {/* ── Header ── */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-1)', margin: '0 0 4px' }}>Feature Flags</h1>
-        <p style={{ color: 'var(--text-3)', fontSize: 14, margin: 0 }}>
-          Control feature access by scope — globally, by plan, or per-tenant overrides.
-        </p>
-      </div>
-
-      {/* ── Stats strip ── */}
-      {!loading && features.length > 0 && (
-        <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
-          {[
-            { label: 'Total Features',    value: features.length, color: 'var(--text-2)', bg: 'var(--bg-hover)' },
-            { label: 'Global',            value: globalCount,     color: '#C67C4E',       bg: 'rgba(198,124,78,0.1)' },
-            { label: 'Plan-Scoped',       value: planScoped,      color: '#22c55e',       bg: 'rgba(34,197,94,0.1)'  },
-            { label: 'Override Only',     value: overridedOnly,   color: '#8b5cf6',       bg: 'rgba(139,92,246,0.1)' },
-            { label: 'Off / Unscoped',    value: offCount,        color: 'var(--text-3)', bg: 'var(--bg-hover)'      },
-          ].map(({ label, value, color, bg }) => (
-            <div key={label} style={{ background: bg, borderRadius: 10, padding: '10px 18px', textAlign: 'center', minWidth: 110 }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color }}>{value}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{label}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {loading && <PageSpinner />}
-      {error && <ErrorBanner message={error} />}
-
-      {!loading && !error && features.length === 0 && (
-        <EmptyState icon="⚑" title="No feature flags" subtitle="Feature flags will appear here once created." />
-      )}
-
-      {/* ── Feature list ── */}
-      {!loading && features.length > 0 && (
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'visible' }}>
-          {/* Column headers */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 14, padding: '10px 20px 10px 76px',
-            borderBottom: '1px solid var(--border)', background: 'var(--bg-hover)',
-            borderRadius: '14px 14px 0 0',
-          }}>
-            <div style={{ flex: 1, fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Feature / Scope
-            </div>
-            <div style={{ minWidth: 56, textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Tenants
-            </div>
-            <div style={{ width: 60, textAlign: 'right', fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Global
-            </div>
-            <div style={{ width: 20 }} />
-          </div>
-
-          {features.map((feature) => (
-            <FeatureToggleComp
-              key={feature._id}
-              feature={feature}
-              availablePlans={plans}
-              allTenants={tenants}
-              onUpdate={handleUpdate}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Resolution legend */}
-      {!loading && (
-        <div style={{ marginTop: 24, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 12 }}>⚡ Feature Resolution Order</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-            {[
-              ['1', '🌍 Global enabled',    '#C67C4E', 'Feature is active for every tenant.'],
-              ['2', '🎯 Tenant override',   '#8b5cf6', 'Tenant is individually overridden.'],
-              ['3', '📋 Plan match',        '#22c55e', "Tenant's plan is in the plan access list."],
-              ['4', '✗  Otherwise',         '#ef4444', 'Feature is disabled for the tenant.'],
-            ].map(([num, label, color, desc]) => (
-              <div key={num} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ width: 20, height: 20, borderRadius: '50%', background: `${color}22`, color, fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{num}</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color, minWidth: 140 }}>{label}</span>
-                <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{desc}</span>
-              </div>
+      <PageHeader
+        eyebrow="Release Control"
+        title="Feature flags"
+        subtitle="Safe, environment-aware flag management with rollout controls, live impact visibility, dependency guards, and tenant-level overrides."
+        actions={(
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {ENVIRONMENTS.map((item) => (
+              <Button
+                key={item.key}
+                variant={environment === item.key ? 'primary' : 'ghost'}
+                size="sm"
+                onClick={() => setEnvironment(item.key)}
+              >
+                {item.label}
+              </Button>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      />
+
+      {loading ? <PageSpinner message="Loading feature control system..." /> : null}
+      {error ? <ErrorBanner message={error} /> : null}
+
+      {!loading && !error ? (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 16, marginBottom: 20 }}>
+            <MetricCard label="Total flags" value={stats.total} subtitle={`Flags configured for ${environment}`} accent="#C67C4E" icon="⚑" />
+            <MetricCard label="Active" value={stats.active} subtitle="Fully enabled with 100% rollout" accent="#22c55e" icon="✅" />
+            <MetricCard label="Partial" value={stats.partial} subtitle="Gradual rollouts in progress" accent="#f59e0b" icon="📊" />
+            <MetricCard label="Disabled" value={stats.disabled} subtitle="No tenant currently receives the feature" accent="#94a3b8" icon="⏸" />
+          </div>
+
+          <Card
+            title="Environment-aware feature catalog"
+            subtitle={`Each environment keeps its own rollout state, impact surface, metadata, and dependency safety checks. Currently viewing ${environment}.`}
+            actions={<Button variant="ghost" size="sm" onClick={load}>Refresh</Button>}
+          >
+            {features.length ? (
+              <div style={{ border: '1px solid var(--border)', borderRadius: 20, overflow: 'hidden', background: 'var(--bg-card)' }}>
+                {features.map((feature) => (
+                  <FeatureToggleComp
+                    key={feature._id}
+                    feature={feature}
+                    availablePlans={plans}
+                    environment={environment}
+                    onUpdate={handleUpdate}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon="⚑"
+                title="No feature flags available"
+                subtitle="The feature catalog will appear here once the backend has seeded feature definitions."
+              />
+            )}
+          </Card>
+
+          <Card title="Resolution model" subtitle="How feature delivery is evaluated for a tenant in the selected environment." style={{ marginTop: 20 }}>
+            <div style={{ display: 'grid', gap: 10 }}>
+              {[
+                '1. Scope decides eligibility: global, matching plan, or tenant override.',
+                '2. Rollout percentage determines which eligible tenants are actually included.',
+                '3. Dependencies must be enabled before a blocked feature can be rolled out.',
+                '4. Metadata and notifications capture who changed the flag and where.',
+              ].map((line) => (
+                <div key={line} style={{ fontSize: 13, color: 'var(--text-2)' }}>{line}</div>
+              ))}
+            </div>
+          </Card>
+        </>
+      ) : null}
     </AdminLayout>
   );
 }

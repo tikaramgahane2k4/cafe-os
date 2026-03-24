@@ -10,7 +10,27 @@ const invoiceSchema = new mongoose.Schema(
     status:        { type: String, enum: ['Paid', 'Pending', 'Overdue', 'Failed'], default: 'Pending' },
     billingDate:   { type: Date, required: true, default: Date.now },
     nextBillingDate:{ type: Date, default: null },
+    paidAt:        { type: Date, default: null },
+    lastPaymentAttemptAt: { type: Date, default: null },
     paymentMethod: { type: String, default: 'Card' },
+    notes:         { type: String, default: '' },
+    paymentLogs:   {
+      type: [
+        new mongoose.Schema(
+          {
+            timestamp: { type: Date, default: Date.now },
+            action:    { type: String, default: '' },
+            status:    { type: String, default: '' },
+            message:   { type: String, default: '' },
+            actor:     { type: String, default: 'System' },
+            amount:    { type: Number, default: 0 },
+            method:    { type: String, default: '' },
+          },
+          { _id: false }
+        ),
+      ],
+      default: [],
+    },
   },
   { timestamps: true }
 );

@@ -23,10 +23,20 @@ const TIP = ({ active, payload, label, valuePrefix = '', valueSuffix = '' }) => 
 export default function AnalyticsChart({
   type = 'bar', data = [], dataKey = 'count', xKey = 'date', title, subtitle,
   color = '#C67C4E', height = 220, valuePrefix = '', valueSuffix = '',
+  emptyIcon = '📊', emptyTitle = 'No data available', emptySubtitle = '',
+  actions = null,
+  onPointClick = null,
 }) {
   const axisStyle = { fontSize: 11, fill: 'var(--text-3)' };
   const gradId = `grad-${dataKey}-${color.replace('#','')}`;
   const gradLineId = `grad-line-${dataKey}-${color.replace('#','')}`;
+  const interactive = typeof onPointClick === 'function';
+
+  const handlePointClick = (state) => {
+    if (!interactive) return;
+    const payload = state?.activePayload?.[0]?.payload;
+    if (payload) onPointClick(payload);
+  };
 
   // For date keys: show only day part (e.g. "Mar 11") every ~5th tick to avoid crowding
   const tickFormatter = xKey === 'date'
@@ -47,26 +57,31 @@ export default function AnalyticsChart({
       borderRadius: 'var(--radius-card)', padding: '20px 24px',
       flex: 1, minWidth: 260, boxShadow: 'var(--shadow-md)',
       transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+      cursor: interactive ? 'pointer' : 'default',
     }}
       onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 10px 20px rgba(0,0,0,0.15)'; }}
       onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
     >
       {title && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{title}</div>
-          {subtitle && <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{subtitle}</div>}
-          <div style={{ height: 2, width: 28, background: color, borderRadius: 2, marginTop: 6, boxShadow: `0 0 6px ${color}80` }} />
+        <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{title}</div>
+            {subtitle && <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{subtitle}</div>}
+            <div style={{ height: 2, width: 28, background: color, borderRadius: 2, marginTop: 6, boxShadow: `0 0 6px ${color}80` }} />
+          </div>
+          {actions}
         </div>
       )}
       {(!data || data.length === 0) ? (
-        <div style={{ height, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', gap: 8 }}>
-          <span style={{ fontSize: 28 }}>📊</span>
-          <span style={{ fontSize: 13 }}>No data available</span>
+        <div style={{ height, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', gap: 8, textAlign: 'center', padding: '0 16px' }}>
+          <span style={{ fontSize: 28 }}>{emptyIcon}</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-2)' }}>{emptyTitle}</span>
+          {emptySubtitle ? <span style={{ fontSize: 12, maxWidth: 260 }}>{emptySubtitle}</span> : null}
         </div>
       ) : (
         <ResponsiveContainer width="100%" height={height}>
           {type === 'bar' ? (
-            <BarChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+            <BarChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }} onClick={handlePointClick}>
               <defs>
                 <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={color} stopOpacity={0.9} />
@@ -80,7 +95,7 @@ export default function AnalyticsChart({
               <Bar dataKey={dataKey} fill={`url(#${gradId})`} radius={[6, 6, 0, 0]} />
             </BarChart>
           ) : type === 'area' ? (
-            <AreaChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+            <AreaChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }} onClick={handlePointClick}>
               <defs>
                 <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%"  stopColor={color} stopOpacity={0.25} />
@@ -95,7 +110,7 @@ export default function AnalyticsChart({
               <Area type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2.5} fill={`url(#${gradId})`} dot={false} activeDot={{ r: 5, fill: color, strokeWidth: 2, stroke: 'var(--bg-card)' }} />
             </AreaChart>
           ) : (
-            <LineChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+            <LineChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }} onClick={handlePointClick}>
               <defs>
                 <linearGradient id={gradLineId} x1="0" y1="0" x2="1" y2="0">
                   <stop offset="0%" stopColor="#C67C4E" />

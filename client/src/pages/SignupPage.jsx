@@ -25,11 +25,11 @@ const SignupPage = () => {
     }
     setLoading(true);
     try {
-      const { data } = await signup(form);
+      const data = await signup(form);
       loginUser(data);
       navigate("/owner/dashboard", { replace: true });
     } catch (err) {
-      setError(err.response?.data?.message || "Signup failed");
+      setError(err.message || "Signup failed");
     } finally {
       setLoading(false);
     }

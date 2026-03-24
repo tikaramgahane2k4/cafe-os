@@ -18,13 +18,13 @@ const LoginPage = () => {
     setLoading(true);
     setError("");
     try {
-      const { data } = await login(form);
+      const data = await login(form);
       loginUser(data);
       navigate(data.user.role === "superadmin" ? "/admin/dashboard" : "/owner/dashboard", {
         replace: true,
       });
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed");
+      setError(err.message || "Login failed");
     } finally {
       setLoading(false);
     }

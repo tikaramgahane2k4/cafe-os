@@ -1,146 +1,164 @@
-import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../components/admin/AdminLayout';
-import StatsCard from '../../components/admin/StatsCard';
 import AnalyticsChart from '../../components/admin/AnalyticsChart';
-import { DashboardSkeleton, ErrorBanner, EmptyState } from '../../components/admin/SkeletonLoader';
-import { fetchAnalytics, fetchBillingSummary, fetchAlerts } from '../../services/adminApi';
+import { DashboardSkeleton, ErrorBanner } from '../../components/admin/SkeletonLoader';
+import DashboardQuickActions from '../../components/dashboard/DashboardQuickActions';
+import PageHeader from '../../components/layout/PageHeader';
+import Card from '../../components/ui/Card';
+import EmptyState from '../../components/ui/EmptyState';
+import MetricCard from '../../components/ui/MetricCard';
+import StatusBadge from '../../components/ui/StatusBadge';
+import { useDashboardOverview } from '../../hooks/useDashboardOverview';
+import { formatMoney } from '../../utils/adminFormat';
 
 const HEALTH = [
-  { label: 'API Server', ok: true },
-  { label: 'Database',   ok: true },
-  { label: 'Auth Layer', ok: true },
+  { label: 'API Server', status: 'Paid', text: 'Operational' },
+  { label: 'Database', status: 'Paid', text: 'Healthy' },
+  { label: 'Notification jobs', status: 'Pending', text: 'Polling every 30s' },
 ];
-
-function QuickAction({ icon, label, onClick }) {
-  const [hover, setHover] = useState(false);
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '18px 24px', background: hover ? 'var(--bg-hover)' : 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, cursor: 'pointer', transition: 'all 0.15s', flex: '1 1 0', minWidth: 100 }}
-    >
-      <span style={{ fontSize: 22 }}>{icon}</span>
-      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)' }}>{label}</span>
-    </button>
-  );
-}
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
-  const [mrr, setMrr] = useState(0);
-  const [activeAlerts, setActiveAlerts] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const {
+    analytics,
+    billingSummary,
+    loading,
+    error,
+    unreadNotifications,
+  } = useDashboardOverview();
 
-  const load = (silent = false) => {
-    if (!silent) setLoading(true);
-    Promise.all([fetchAnalytics(), fetchBillingSummary(), fetchAlerts({ status: 'Active', limit: 200 })])
-      .then(([analytics, billing, alerts]) => {
-        setData(analytics.data);
-        setMrr(billing.data?.mrr || 0);
-        setActiveAlerts(alerts.stats?.active || 0);
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => !silent && setLoading(false));
-  };
-
-  useEffect(() => {
-    load(false);
-    const id = setInterval(() => load(true), 30000);
-    return () => clearInterval(id);
-  }, []);
+  const quickActions = [
+    {
+      icon: '🏪',
+      label: 'Add tenant',
+      description: 'Create a new cafe workspace and issue owner credentials.',
+      onClick: () => navigate('/admin/tenants'),
+    },
+    {
+      icon: '💳',
+      label: 'Manage plans',
+      description: 'Update pricing, limits, and package availability.',
+      onClick: () => navigate('/admin/subscriptions'),
+    },
+    {
+      icon: '🧾',
+      label: 'Billing control',
+      description: 'Generate invoices, retry payments, and inspect collections.',
+      onClick: () => navigate('/admin/billing'),
+    },
+    {
+      icon: '⚑',
+      label: 'Feature rollout',
+      description: 'Toggle capabilities by plan or tenant override.',
+      onClick: () => navigate('/admin/feature-flags'),
+    },
+  ];
 
   return (
     <AdminLayout>
-      {/* Page header */}
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-1)', margin: '0 0 4px' }}>Platform Dashboard</h1>
-        <p style={{ color: 'var(--text-3)', fontSize: 14, margin: 0 }}>Real-time overview of your Cafe OS SaaS platform.</p>
-      </div>
+      <PageHeader
+        eyebrow="Control Center"
+        title="Platform dashboard"
+        subtitle="A Super Admin view of revenue, tenant health, feature rollout, and live system activity."
+      />
 
-      {loading && <DashboardSkeleton />}
-      {error && <ErrorBanner message={error} />}
+      {loading ? <DashboardSkeleton /> : null}
+      {error ? <ErrorBanner message={error} /> : null}
 
-      {!loading && !error && !data && (
-        <EmptyState icon="☕" title="No data yet" subtitle="Connect the backend to see live metrics." />
-      )}
+      {!loading && !error && !analytics ? (
+        <EmptyState
+          icon="☕"
+          title="No platform data yet"
+          subtitle="Connect the backend and start creating tenants to unlock live SaaS metrics."
+        />
+      ) : null}
 
-      {data && (
+      {!loading && !error && analytics ? (
         <>
-          {/* Stats grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}>
-            <StatsCard title="Total Cafés"       value={data.totalCafes}        icon="🏪" variant="caramel" subtitle="All registered" />
-            <StatsCard title="Active Tenants"    value={data.activeTenants}     icon="✅" variant="green"   subtitle="Running now" />
-            <StatsCard title="Suspended"         value={data.suspendedTenants}  icon="⏸" variant="amber" />
-            <StatsCard title="Expired"           value={data.expiredTenants}    icon="⏱" variant="rose" />
-            <StatsCard title="Total MRR"         value={`₹${mrr.toLocaleString('en-IN')}`} icon="💰" variant="purple" subtitle="Active subscription revenue" />
-            <StatsCard title="Active Alerts"     value={activeAlerts} icon="🚨" variant="blue" subtitle="Operational warnings" />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
+            <MetricCard label="Total tenants" value={analytics.totalCafes} subtitle="Registered workspaces across the platform" accent="#c67c4e" icon="🏪" />
+            <MetricCard label="Active tenants" value={analytics.activeTenants} subtitle={`${analytics.suspendedTenants} suspended · ${analytics.expiredTenants} expired`} accent="#22c55e" icon="⚡" />
+            <MetricCard label="Platform MRR" value={formatMoney(billingSummary?.mrr || analytics.mrr || 0)} trend={billingSummary?.monthlyGrowthPct || 0} subtitle="Recurring subscription revenue" accent="#0f766e" icon="💰" />
+            <MetricCard label="Unread notifications" value={unreadNotifications} subtitle="Centralized alerts and events awaiting review" accent="#3b82f6" icon="🔔" />
           </div>
 
-          {/* Quick actions + Platform health */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 20, marginBottom: 32, alignItems: 'start' }}>
-            {/* Quick actions */}
-            <div style={{ background: 'var(--bg-card)', borderRadius: 14, border: '1px solid var(--border)', padding: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Quick Actions</div>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <QuickAction icon="🏪" label="Add Tenant"       onClick={() => navigate('/admin/tenants')} />
-                <QuickAction icon="💳" label="Create Plan"      onClick={() => navigate('/admin/subscriptions')} />
-                <QuickAction icon="⚑" label="Manage Features"  onClick={() => navigate('/admin/feature-flags')} />
-                <QuickAction icon="👤" label="Add User"         onClick={() => navigate('/admin/users')} />
-                <QuickAction icon="🧾" label="Billing"          onClick={() => navigate('/admin/billing')} />
-                <QuickAction icon="🚨" label="Alerts"           onClick={() => navigate('/admin/alerts')} />
-              </div>
-            </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.35fr) minmax(280px, 0.9fr)', gap: 18, marginBottom: 24 }}>
+            <DashboardQuickActions actions={quickActions} />
 
-            {/* Platform health */}
-            <div style={{ background: 'var(--bg-card)', borderRadius: 14, border: '1px solid var(--border)', padding: 20, minWidth: 200 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Platform Health</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {HEALTH.map((h) => (
-                  <div key={h.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
-                    <span style={{ fontSize: 13, color: 'var(--text-2)' }}>{h.label}</span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 700, background: h.ok ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', color: h.ok ? '#22c55e' : '#ef4444' }}>
-                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: h.ok ? '#22c55e' : '#ef4444' }} />
-                      {h.ok ? 'Online' : 'Offline'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Charts */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20, marginBottom: 32 }}>
-            <AnalyticsChart type="bar"  data={data.tenantGrowth}  dataKey="count"  title="🏪 Tenant Growth"     subtitle="New tenants — last 7 days" color="#C67C4E" />
-            <AnalyticsChart type="area" data={data.activityTrend} dataKey="count"  title="⚡ Platform Activity"  subtitle="Events tracked daily"       color="#a78bfa" />
-            <AnalyticsChart type="area" data={data.revenueGrowth || data.revenue} dataKey="amount" title="💰 Revenue Growth" subtitle="Monthly recurring revenue" color="#3b82f6" valuePrefix="₹" />
-          </div>
-
-          {/* Live activity feed */}
-          {data.recentLogs && data.recentLogs.length > 0 && (
-            <div style={{ background: 'var(--bg-card)', borderRadius: 14, border: '1px solid var(--border)', padding: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Recent Activity</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                {data.recentLogs.slice(0, 5).map((log, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: i < 4 ? '1px solid var(--border)' : 'none' }}>
-                    <span style={{ fontSize: 20 }}>📋</span>
-                    <div style={{ flex: 1 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>{log.action}</span>
-                      <span style={{ fontSize: 12, color: 'var(--text-3)', marginLeft: 8 }}>{log.target || log.details}</span>
+            <Card title="Platform health" subtitle="Operational signals across the admin control plane.">
+              <div style={{ display: 'grid', gap: 12 }}>
+                {HEALTH.map((item) => (
+                  <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{item.label}</div>
+                      <div style={{ marginTop: 4, fontSize: 12, color: 'var(--text-3)' }}>{item.text}</div>
                     </div>
-                    <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
-                      {new Date(log.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                    <StatusBadge status={item.status} />
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            </Card>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 18, marginBottom: 24 }}>
+            <AnalyticsChart
+              type="bar"
+              data={analytics.tenantGrowth}
+              dataKey="count"
+              title="Tenant growth"
+              subtitle="New tenants created across the last 30 days"
+              color="#c67c4e"
+            />
+            <AnalyticsChart
+              type="area"
+              data={analytics.activityTrend}
+              dataKey="count"
+              title="Activity volume"
+              subtitle="Tracked admin and platform events"
+              color="#0f766e"
+            />
+            <AnalyticsChart
+              type="line"
+              data={analytics.revenueGrowth}
+              dataKey="amount"
+              title="Revenue trend"
+              subtitle="Estimated MRR progression"
+              color="#3b82f6"
+              valuePrefix="₹"
+            />
+          </div>
+
+          <Card title="Recent activity" subtitle="The latest admin and system events flowing into the platform.">
+            {analytics.recentLogs?.length ? (
+              <div style={{ display: 'grid', gap: 12 }}>
+                {analytics.recentLogs.map((log, index) => (
+                  <div key={`${log.action}-${index}`} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', paddingBottom: 12, borderBottom: index < analytics.recentLogs.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 14, background: 'rgba(198,124,78,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      📋
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)' }}>{log.action}</div>
+                      <div style={{ marginTop: 4, fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5 }}>
+                        {log.target || log.details}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
+                      {new Date(log.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon="📋"
+                title="No activity yet"
+                subtitle="Recent billing, tenant, and feature events will appear here."
+                compact
+              />
+            )}
+          </Card>
         </>
-      )}
+      ) : null}
     </AdminLayout>
   );
 }

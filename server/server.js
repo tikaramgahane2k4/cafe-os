@@ -1,10 +1,21 @@
 const path = require("path");
+const fs = require("fs");
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
 
-dotenv.config();
+const envPath = path.join(__dirname, ".env");
+const dotenvResult = dotenv.config({ path: envPath });
+
+if (dotenvResult.error) {
+  const typoEnvPath = path.join(__dirname, ".env ");
+  if (fs.existsSync(typoEnvPath)) {
+    console.warn(
+      `[Config] Found "${path.basename(typoEnvPath)}" with a trailing space. Rename it to ".env" so dotenv can load your MongoDB settings.`
+    );
+  }
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -21,7 +32,6 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // DB
 const connectDB = require("./config/database");
-connectDB();
 
 // Auth (legacy owner auth)
 const authRoutes = require("./routes/auth");
@@ -37,7 +47,7 @@ const featureRoutes = require("./routes/featureRoutes");
 const userRoutes = require("./routes/userRoutes");
 const logRoutes = require("./routes/logRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
-const alertRoutes = require("./routes/alertRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 const invoiceRoutes = require("./routes/invoiceRoutes");
 const tenantEntityRoutes = require("./routes/tenantEntityRoutes");
 
@@ -49,7 +59,7 @@ app.use("/api/admin/features", featureRoutes);
 app.use("/api/admin/users", userRoutes);
 app.use("/api/admin/logs", logRoutes);
 app.use("/api/admin/analytics", analyticsRoutes);
-app.use("/api/admin/alerts", alertRoutes);
+app.use("/api/admin/notifications", notificationRoutes);
 app.use("/api/admin/invoices", invoiceRoutes);
 app.use("/api/tenant", tenantEntityRoutes);
 
@@ -77,10 +87,25 @@ app.get("/api/health", (req, res) => {
 
 app.get("/", (req, res) => res.json({ message: "Cafe-OS API running" }));
 
-const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-server.on("error", (err) => {
-  if (err.code === "EADDRINUSE") {
-    console.error(`Port ${PORT} busy. Run: killall -9 node`);
-    process.exit(1);
+const startServer = async () => {
+  await connectDB();
+
+  const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  server.on("error", (err) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(`Port ${PORT} busy. Run: killall -9 node`);
+      process.exit(1);
+    }
+  });
+};
+
+startServer().catch((error) => {
+  console.error(error.message || error);
+  if (mongoose.connection.readyState !== 0) {
+    mongoose.connection.close().finally(() => process.exit(1));
+    return;
   }
+
+  process.exit(1);
 });
+

@@ -1,18 +1,25 @@
 const Plan = require('../models/Plan');
 const Tenant = require('../models/Tenant');
 const ActivityLog = require('../models/ActivityLog');
+const { createNotification } = require('../services/notificationService');
 
 // Canonical feature key → human label mapping (shared source of truth)
 const FEATURE_CATALOG = {
+  DIGITAL_MENU:       { label: 'Digital Menu',         icon: '📋' },
+  QR_GENERATION:      { label: 'QR Generation',        icon: '🔳' },
+  BASIC_ORDERS:       { label: 'Basic Orders',         icon: '🧾' },
   POS:                { label: 'Point of Sale',        icon: '🖥️' },
   INVENTORY:          { label: 'Inventory Management', icon: '📦' },
-  CRM:                { label: 'CRM System',            icon: '👥' },
+  CRM:                { label: 'CRM Automations',      icon: '👥' },
   BASIC_REPORTS:      { label: 'Basic Reports',         icon: '📊' },
   ADVANCED_ANALYTICS: { label: 'Advanced Analytics',   icon: '📈' },
   API_ACCESS:         { label: 'API Access',            icon: '🔌' },
   STAFF_MANAGEMENT:   { label: 'Staff Management',      icon: '👔' },
   ONLINE_ORDERING:    { label: 'Online Ordering',       icon: '🛒' },
   LOYALTY_PROGRAM:    { label: 'Loyalty Program',       icon: '⭐' },
+  GAMIFICATION:       { label: 'Gamification Engine',  icon: '🎮' },
+  REVIEWS:            { label: 'AI Review System',     icon: '🤖' },
+  CUSTOM_BRANDING:    { label: 'Custom Branding',      icon: '🎨' },
 };
 
 const DEFAULT_PLANS = [
@@ -60,6 +67,13 @@ const createPlan = async (req, res) => {
       adminUser: req.body.adminUser || 'SuperAdmin',
       targetEntity: plan.planName,
       description: `Subscription plan "${plan.planName}" created.`,
+    });
+    await createNotification({
+      message: `Plan "${plan.planName}" was created at ${plan.price === 0 ? 'free' : `₹${plan.price.toLocaleString('en-IN')}/month`}.`,
+      type: 'success',
+      eventType: 'plan_created',
+      link: '/admin/subscriptions',
+      meta: { planId: plan._id, planName: plan.planName, price: plan.price },
     });
     res.status(201).json({ success: true, data: plan });
   } catch (error) {
@@ -118,6 +132,13 @@ const updatePlan = async (req, res) => {
       targetEntity: plan.planName,
       description: `Subscription plan "${plan.planName}" updated.`,
     });
+    await createNotification({
+      message: `Plan "${plan.planName}" was updated by billing admin.`,
+      type: 'info',
+      eventType: 'plan_updated',
+      link: '/admin/subscriptions',
+      meta: { planId: plan._id, planName: plan.planName, price: plan.price },
+    });
     res.json({ success: true, data: plan });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -134,6 +155,13 @@ const deletePlan = async (req, res) => {
       adminUser: 'SuperAdmin',
       targetEntity: plan.planName,
       description: `Subscription plan "${plan.planName}" deleted.`,
+    });
+    await createNotification({
+      message: `Plan "${plan.planName}" was deleted from the catalog.`,
+      type: 'warning',
+      eventType: 'plan_deleted',
+      link: '/admin/subscriptions',
+      meta: { planName: plan.planName },
     });
     res.json({ success: true, message: 'Plan deleted successfully' });
   } catch (error) {

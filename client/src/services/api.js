@@ -1,78 +1,66 @@
-import axios from "axios";
+import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api';
+const rawBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const sanitizedBase = rawBase.replace(/\/$/, '');
+const baseURL = sanitizedBase.endsWith('/api') ? sanitizedBase : `${sanitizedBase}/api`;
+
 const getToken = () => localStorage.getItem('token');
 
-// Tumhara auth (axios)
-const API = axios.create({ baseURL: API_URL });
-API.interceptors.request.use((config) => {
+export const api = axios.create({
+  baseURL,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+api.interceptors.request.use((config) => {
   const token = getToken();
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
   return config;
 });
 
-export const signup = (data) => API.post("/auth/signup", data);
-export const login = (data) => API.post("/auth/login", data);
-export const getProfile = () => API.get("/auth/profile");
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const method = error.config?.method?.toUpperCase() || 'GET';
+    const path = error.config?.url || 'unknown-endpoint';
+    const message = error.response?.data?.message
+      || error.message
+      || 'Something went wrong while talking to the server.';
 
-const api = {
-  // Menu
-  getMenuItems: async () => {
-    const res = await fetch(`${API_URL}/menu`, { headers: { Authorization: `Bearer ${getToken()}` } });
-    return res.json();
+    console.error(`[API ${method}] ${path}`, error);
+    return Promise.reject(new Error(message));
   },
-  addMenuItem: async (item) => {
-    const res = await fetch(`${API_URL}/menu`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify(item) });
-    return res.json();
-  },
-  updateMenuItem: async (id, item) => {
-    const res = await fetch(`${API_URL}/menu/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify(item) });
-    return res.json();
-  },
-  deleteMenuItem: async (id) => {
-    const res = await fetch(`${API_URL}/menu/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } });
-    return res.json();
-  },
-  updateStock: async (id, inStock) => {
-    const res = await fetch(`${API_URL}/menu/${id}/stock`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify({ inStock }) });
-    return res.json();
-  },
+);
 
-  // Staff
-  getStaff: async () => {
-    const res = await fetch(`${API_URL}/staff`, { headers: { Authorization: `Bearer ${getToken()}` } });
-    return res.json();
-  },
-  addStaff: async (staff) => {
-    const res = await fetch(`${API_URL}/staff`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify(staff) });
-    return res.json();
-  },
-  updateStaff: async (id, staff) => {
-    const res = await fetch(`${API_URL}/staff/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify(staff) });
-    return res.json();
-  },
-  deleteStaff: async (id) => {
-    const res = await fetch(`${API_URL}/staff/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } });
-    return res.json();
-  },
+export async function apiRequest(config) {
+  const response = await api(config);
+  return response.data;
+}
 
-  // Customers
-  getCustomers: async () => {
-    const res = await fetch(`${API_URL}/customers`, { headers: { Authorization: `Bearer ${getToken()}` } });
-    return res.json();
-  },
-  getCustomerDetails: async (id) => {
-    const res = await fetch(`${API_URL}/customers/${id}`, { headers: { Authorization: `Bearer ${getToken()}` } });
-    return res.json();
-  },
-  addCustomer: async (customer) => {
-    const res = await fetch(`${API_URL}/customers`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify(customer) });
-    return res.json();
-  },
-  addOrder: async (customerId, order) => {
-    const res = await fetch(`${API_URL}/customers/${customerId}/orders`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify(order) });
-    return res.json();
-  }
+export const signup = (data) => apiRequest({ url: '/auth/signup', method: 'post', data });
+export const login = (data) => apiRequest({ url: '/auth/login', method: 'post', data });
+export const getProfile = () => apiRequest({ url: '/auth/profile' });
+
+const ownerApi = {
+  getMenuItems: () => apiRequest({ url: '/menu' }),
+  addMenuItem: (item) => apiRequest({ url: '/menu', method: 'post', data: item }),
+  updateMenuItem: (id, item) => apiRequest({ url: `/menu/${id}`, method: 'put', data: item }),
+  deleteMenuItem: (id) => apiRequest({ url: `/menu/${id}`, method: 'delete' }),
+  updateStock: (id, inStock) => apiRequest({ url: `/menu/${id}/stock`, method: 'patch', data: { inStock } }),
+  getStaff: () => apiRequest({ url: '/staff' }),
+  addStaff: (staff) => apiRequest({ url: '/staff', method: 'post', data: staff }),
+  updateStaff: (id, staff) => apiRequest({ url: `/staff/${id}`, method: 'put', data: staff }),
+  deleteStaff: (id) => apiRequest({ url: `/staff/${id}`, method: 'delete' }),
+  getCustomers: () => apiRequest({ url: '/customers' }),
+  getCustomerDetails: (id) => apiRequest({ url: `/customers/${id}` }),
+  addCustomer: (customer) => apiRequest({ url: '/customers', method: 'post', data: customer }),
+  addOrder: (customerId, order) => apiRequest({ url: `/customers/${customerId}/orders`, method: 'post', data: order }),
 };
 
-export default api;
+export default ownerApi;

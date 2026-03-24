@@ -16,7 +16,7 @@
   --color-cream:         #F5E6D3;
   --color-cream-2:       #EDD5BB;
   --color-muted:         #9C7A60;
-  --font-sans: 'Inter', 'system-ui', sans-serif;
+  --font-sans: 'Manrope', 'system-ui', sans-serif;
 }
 
 /* ── Dark-mode variant ─────────────────────────────────────── */
@@ -35,7 +35,7 @@
   --warning-yellow: #B08968;
   --danger-red: #9B2226;
 
-  font-family: 'Inter', 'Poppins', system-ui, sans-serif;
+  font-family: 'Manrope', 'Poppins', system-ui, sans-serif;
   background-color: var(--bg-beige);
   color: #333;
   --bg-base:    #F5E6D3;
@@ -109,7 +109,7 @@ body {
   min-height: 100vh;
   background-color: var(--bg-base);
   color: var(--text-1);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Manrope', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.2s, color 0.2s;
   /* override Vite default */

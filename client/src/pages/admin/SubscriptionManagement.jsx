@@ -1,371 +1,317 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useMemo, useState } from 'react';
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, Cell, ResponsiveContainer,
+  BarChart, Bar, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import toast from 'react-hot-toast';
 import AdminLayout from '../../components/admin/AdminLayout';
 import PlanCard from '../../components/admin/PlanCard';
-import {
-  fetchPlans, createPlan, updatePlan, deletePlan, fetchPlanDistribution,
-} from '../../services/adminApi';
-import { PageSpinner, ErrorBanner, EmptyState, Spinner } from '../../components/admin/SkeletonLoader';
-import ConfirmDialog from '../../components/admin/ConfirmDialog';
+import { ErrorBanner, PageSpinner } from '../../components/admin/SkeletonLoader';
+import PageHeader from '../../components/layout/PageHeader';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import EmptyState from '../../components/ui/EmptyState';
+import MetricCard from '../../components/ui/MetricCard';
+import Modal from '../../components/ui/Modal';
+import { usePlans } from '../../hooks/usePlans';
 
-// ── Feature catalog ─────────────────────────────────────────────────────────
-const ALL_FEATURES = [
-  { key: 'POS',                label: 'Point of Sale',        icon: '🖥️' },
-  { key: 'INVENTORY',          label: 'Inventory Management', icon: '📦' },
-  { key: 'CRM',                label: 'CRM System',           icon: '👥' },
-  { key: 'BASIC_REPORTS',      label: 'Basic Reports',        icon: '📊' },
-  { key: 'ADVANCED_ANALYTICS', label: 'Advanced Analytics',   icon: '📈' },
-  { key: 'API_ACCESS',         label: 'API Access',           icon: '🔌' },
-  { key: 'STAFF_MANAGEMENT',   label: 'Staff Management',     icon: '👔' },
-  { key: 'ONLINE_ORDERING',    label: 'Online Ordering',      icon: '🛒' },
-  { key: 'LOYALTY_PROGRAM',    label: 'Loyalty Program',      icon: '⭐' },
-];
+const chartColors = ['#94a3b8', '#22c55e', '#d97706', '#c67c4e', '#0f766e', '#3b82f6'];
 
-const CHART_COLORS = ['#94a3b8', '#22c55e', '#C67C4E', '#a78bfa', '#3b82f6', '#f59e0b'];
+const fieldStyle = {
+  width: '100%',
+  minHeight: 46,
+  background: 'var(--bg-base)',
+  border: '1px solid var(--border)',
+  color: 'var(--text-1)',
+  borderRadius: 14,
+  padding: '0 14px',
+  boxSizing: 'border-box',
+  fontSize: 13,
+};
 
-// ── Custom chart tooltip ────────────────────────────────────────────────────
-function ChartTooltip({ active, payload }) {
-  if (!active || !payload?.length) return null;
-  const { plan, count } = payload[0].payload;
+const labelStyle = {
+  fontSize: 11,
+  fontWeight: 800,
+  color: 'var(--text-3)',
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+  marginBottom: 6,
+  display: 'block',
+};
+
+function PlanEditorModal({
+  open,
+  onClose,
+  form,
+  setForm,
+  featureCatalog,
+  saving,
+  onSubmit,
+  editing,
+}) {
+  const featureEntries = Object.entries(featureCatalog);
+
+  const toggleFeature = (key) => {
+    setForm((current) => ({
+      ...current,
+      featureList: current.featureList.includes(key)
+        ? current.featureList.filter((item) => item !== key)
+        : [...current.featureList, key],
+    }));
+  };
+
   return (
-    <div style={{
-      background: 'var(--bg-card)', border: '1px solid var(--border)',
-      borderRadius: 8, padding: '8px 14px', fontSize: 13, color: 'var(--text-1)',
-      boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-    }}>
-      <strong style={{ color: payload[0].fill }}>{plan}</strong>
-      <span style={{ color: 'var(--text-3)' }}> — </span>
-      {count} {count === 1 ? 'tenant' : 'tenants'}
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={editing ? 'Edit plan' : 'Create plan'}
+      subtitle="Configure pricing, limits, and included product capabilities."
+      width={760}
+    >
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSubmit();
+        }}
+        style={{ display: 'grid', gap: 18 }}
+      >
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
+          <div>
+            <label style={labelStyle}>Plan name</label>
+            <input required value={form.planName} onChange={(event) => setForm((current) => ({ ...current, planName: event.target.value }))} style={fieldStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Price (₹)</label>
+            <input required type="number" min="0" value={form.price} onChange={(event) => setForm((current) => ({ ...current, price: event.target.value }))} style={fieldStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Order limit</label>
+            <input type="number" min="0" value={form.orderLimit} onChange={(event) => setForm((current) => ({ ...current, orderLimit: event.target.value }))} style={fieldStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Staff limit</label>
+            <input type="number" min="0" value={form.staffLimit} onChange={(event) => setForm((current) => ({ ...current, staffLimit: event.target.value }))} style={fieldStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Status</label>
+            <select value={form.planStatus} onChange={(event) => setForm((current) => ({ ...current, planStatus: event.target.value }))} style={fieldStyle}>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label style={labelStyle}>Included features</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
+            {featureEntries.map(([key, meta]) => {
+              const active = form.featureList.includes(key);
+
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => toggleFeature(key)}
+                  style={{
+                    border: active ? '1px solid rgba(198,124,78,0.34)' : '1px solid var(--border)',
+                    background: active ? 'rgba(198,124,78,0.12)' : 'var(--bg-card)',
+                    color: active ? '#c67c4e' : 'var(--text-2)',
+                    borderRadius: 16,
+                    padding: '12px 14px',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div style={{ fontSize: 12, fontWeight: 800 }}>{meta.icon || '⚑'} {meta.label || key}</div>
+                  <div style={{ marginTop: 4, fontSize: 11, color: 'var(--text-3)' }}>
+                    {active ? 'Included in this plan' : 'Tap to include'}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap' }}>
+          <Button variant="ghost" type="button" onClick={onClose}>Cancel</Button>
+          <Button type="submit" disabled={saving}>{saving ? 'Saving...' : editing ? 'Update plan' : 'Create plan'}</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function DistributionTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null;
+
+  const row = payload[0].payload;
+
+  return (
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '10px 12px', fontSize: 12, boxShadow: 'var(--shadow-md)' }}>
+      <div style={{ fontWeight: 800, color: 'var(--text-1)' }}>{row.plan}</div>
+      <div style={{ marginTop: 4, color: 'var(--text-3)' }}>{row.count} tenant{row.count === 1 ? '' : 's'}</div>
     </div>
   );
 }
 
-// ── Style constants ─────────────────────────────────────────────────────────
-const emptyForm = {
-  planName: '', price: '', featureList: [], orderLimit: 100, staffLimit: 5, planStatus: 'Active',
-};
-const inp = {
-  width: '100%', background: 'var(--bg-base)', border: '1px solid var(--border)',
-  color: 'var(--text-1)', padding: '10px 14px', borderRadius: 9,
-  fontSize: 13, boxSizing: 'border-box', outline: 'none',
-};
-const lbl = {
-  fontSize: 11, fontWeight: 700, color: 'var(--text-3)',
-  textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 5,
-};
-
 export default function SubscriptionManagement() {
-  const [plans, setPlans]               = useState([]);
-  const [distribution, setDistribution] = useState([]);
-  const [loading, setLoading]           = useState(true);
-  const [error, setError]               = useState(null);
-  const [showForm, setShowForm]         = useState(false);
-  const [form, setForm]                 = useState(emptyForm);
-  const [editId, setEditId]             = useState(null);
-  const [saving, setSaving]             = useState(false);
-  const [confirm, setConfirm]           = useState(null);
+  const {
+    plans,
+    distribution,
+    countByPlan,
+    featureCatalog,
+    loading,
+    saving,
+    error,
+    emptyDraft,
+    createPlanRecord,
+    updatePlanRecord,
+    deletePlanRecord,
+  } = usePlans();
+  const [showEditor, setShowEditor] = useState(false);
+  const [editingPlanId, setEditingPlanId] = useState('');
+  const [form, setForm] = useState(emptyDraft);
 
-  const load = useCallback(() => {
-    setLoading(true);
-    Promise.all([fetchPlans(), fetchPlanDistribution()])
-      .then(([plansRes, distRes]) => {
-        setPlans(plansRes.data ?? []);
-        setDistribution(distRes.data ?? []);
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
+  const totalTenants = distribution.reduce((sum, row) => sum + row.count, 0);
+  const paidPlans = useMemo(() => plans.filter((plan) => Number(plan.price) > 0).length, [plans]);
 
-  useEffect(() => { load(); }, [load]);
-
-  // Toggle a feature key on/off in the form
-  const toggleFeature = (key) =>
-    setForm((f) => ({
-      ...f,
-      featureList: f.featureList.includes(key)
-        ? f.featureList.filter((k) => k !== key)
-        : [...f.featureList, key],
-    }));
+  const openCreate = () => {
+    setForm(emptyDraft);
+    setEditingPlanId('');
+    setShowEditor(true);
+  };
 
   const openEdit = (plan) => {
+    setEditingPlanId(plan._id);
     setForm({
-      planName:    plan.planName,
-      price:       plan.price,
+      planName: plan.planName,
+      price: plan.price,
       featureList: Array.isArray(plan.featureList) ? plan.featureList : [],
-      orderLimit:  plan.orderLimit,
-      staffLimit:  plan.staffLimit,
-      planStatus:  plan.planStatus,
+      orderLimit: plan.orderLimit,
+      staffLimit: plan.staffLimit,
+      planStatus: plan.planStatus,
     });
-    setEditId(plan._id);
-    setShowForm(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setShowEditor(true);
   };
-
-  const handleDelete = async (id) => {
-    try { await deletePlan(id); toast.success('Plan deleted'); load(); } catch (e) { toast.error(e.message); }
-    setConfirm(null);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      const payload = {
-        ...form,
-        price:      Number(form.price),
-        orderLimit: Number(form.orderLimit),
-        staffLimit: Number(form.staffLimit),
-        // featureList is already an array of keys
-      };
-      if (editId) await updatePlan(editId, payload);
-      else        await createPlan(payload);
-      toast.success(editId ? 'Plan updated' : 'Plan created');
-      setForm(emptyForm);
-      setEditId(null);
-      setShowForm(false);
-      load();
-    } catch (e) { toast.error(e.message); }
-    finally { setSaving(false); }
-  };
-
-  const countMap     = Object.fromEntries(distribution.map(({ plan, count }) => [plan, count]));
-  const totalTenants = distribution.reduce((s, d) => s + d.count, 0);
 
   return (
     <AdminLayout>
+      <PageHeader
+        eyebrow="Monetization"
+        title="Subscription plans"
+        subtitle="Manage pricing, packaging, and adoption across the CafeOS product catalog."
+        actions={<Button onClick={openCreate}>New plan</Button>}
+      />
 
-      {/* ── Page header ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-1)', margin: '0 0 4px' }}>
-            Subscription Plans
-          </h1>
-          <p style={{ color: 'var(--text-3)', fontSize: 14, margin: 0 }}>
-            {plans.length} plan{plans.length !== 1 ? 's' : ''} · {totalTenants} total tenant{totalTenants !== 1 ? 's' : ''}
-          </p>
-        </div>
-        <button
-          onClick={() => { setForm(emptyForm); setEditId(null); setShowForm(!showForm); }}
-          style={{
-            padding: '10px 20px', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 13,
-            background: showForm ? 'var(--bg-hover)' : '#C67C4E',
-            color: showForm ? 'var(--text-2)' : '#fff',
-            border: showForm ? '1px solid var(--border)' : 'none',
-          }}
-        >
-          {showForm ? '✕ Cancel' : '+ New Plan'}
-        </button>
-      </div>
+      <PlanEditorModal
+        open={showEditor}
+        onClose={() => setShowEditor(false)}
+        form={form}
+        setForm={setForm}
+        featureCatalog={featureCatalog}
+        saving={saving}
+        editing={Boolean(editingPlanId)}
+        onSubmit={async () => {
+          const payload = {
+            ...form,
+            price: Number(form.price),
+            orderLimit: Number(form.orderLimit),
+            staffLimit: Number(form.staffLimit),
+          };
 
-      {/* ── Plan Usage Analytics bar chart ── */}
-      {!loading && distribution.length > 0 && (
-        <div style={{
-          background: 'var(--bg-card)', border: '1px solid var(--border)',
-          borderRadius: 14, padding: '20px 24px', marginBottom: 28,
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>Plan Usage Analytics</div>
-              <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 3 }}>
-                How many tenants are on each subscription plan
-              </div>
-            </div>
-            {/* Summary pills */}
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {distribution.map(({ plan, count }, i) => (
-                <div key={plan} style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  background: 'var(--bg-hover)', borderRadius: 99, padding: '4px 12px',
-                  fontSize: 12, fontWeight: 600, color: 'var(--text-2)',
-                }}>
-                  <span style={{
-                    width: 8, height: 8, borderRadius: '50%',
-                    background: CHART_COLORS[i % CHART_COLORS.length],
-                    display: 'inline-block', flexShrink: 0,
-                  }} />
-                  {plan}
-                  <span style={{ color: 'var(--text-1)', marginLeft: 2 }}>{count}</span>
-                </div>
-              ))}
-            </div>
+          if (editingPlanId) {
+            await updatePlanRecord(editingPlanId, payload);
+          } else {
+            await createPlanRecord(payload);
+          }
+
+          setShowEditor(false);
+        }}
+      />
+
+      {loading ? <PageSpinner message="Loading plan catalog..." /> : null}
+      {error ? <ErrorBanner message={error} /> : null}
+
+      {!loading && !error ? (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 18 }}>
+            <MetricCard label="Plans" value={plans.length} subtitle="Active catalog entries in the subscription stack" accent="#c67c4e" icon="💳" />
+            <MetricCard label="Paid tiers" value={paidPlans} subtitle="Plans generating recurring revenue" accent="#22c55e" icon="💰" />
+            <MetricCard label="Tenants assigned" value={totalTenants} subtitle="Workspaces distributed across available plans" accent="#0f766e" icon="🏪" />
+            <MetricCard label="Feature catalog" value={Object.keys(featureCatalog).length} subtitle="Capabilities available for packaging" accent="#3b82f6" icon="⚑" />
           </div>
 
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart
-              data={distribution}
-              barSize={44}
-              margin={{ top: 4, right: 16, left: -20, bottom: 0 }}
-            >
-              <XAxis
-                dataKey="plan"
-                tick={{ fill: 'var(--text-3)', fontSize: 12, fontWeight: 600 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fill: 'var(--text-3)', fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-                allowDecimals={false}
-              />
-              <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-              <Bar dataKey="count" radius={[7, 7, 0, 0]}>
-                {distribution.map((_, i) => (
-                  <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} fillOpacity={0.88} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(280px, 0.9fr)', gap: 18, marginBottom: 18 }}>
+            <Card title="Plan adoption" subtitle="How tenants are currently distributed across pricing tiers.">
+              {distribution.length ? (
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={distribution} margin={{ top: 8, right: 12, left: -24, bottom: 0 }}>
+                    <XAxis dataKey="plan" tick={{ fill: 'var(--text-3)', fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: 'var(--text-3)', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <Tooltip content={<DistributionTooltip />} cursor={{ fill: 'rgba(198,124,78,0.08)' }} />
+                    <Bar dataKey="count" radius={[8, 8, 0, 0]}>
+                      {distribution.map((_, index) => <Cell key={index} fill={chartColors[index % chartColors.length]} />)}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <EmptyState
+                  icon="📊"
+                  title="No adoption data yet"
+                  subtitle="Create plans and assign tenants to visualize packaging performance."
+                  compact
+                />
+              )}
+            </Card>
 
-      {/* ── Create / Edit form ── */}
-      {showForm && (
-        <div style={{
-          background: 'var(--bg-card)', border: '1px solid var(--border)',
-          borderRadius: 14, padding: 24, marginBottom: 28,
-        }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)', marginBottom: 18 }}>
-            {editId ? 'Edit Plan' : 'New Plan'}
-          </div>
-          <form onSubmit={handleSubmit}>
-
-            {/* Basic fields */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 14, marginBottom: 20 }}>
-              {[
-                ['Plan Name', 'planName', 'text',   true],
-                ['Price (₹)', 'price',    'number', true],
-                ['Order Limit','orderLimit','number',false],
-                ['Staff Limit','staffLimit','number',false],
-              ].map(([l, k, t, r]) => (
-                <div key={k}>
-                  <label style={lbl}>{l}</label>
-                  <input
-                    required={r} type={t} value={form[k]}
-                    onChange={(e) => setForm({ ...form, [k]: e.target.value })}
-                    style={inp}
+            <Card title="Adoption summary" subtitle="Quick read on how each tier is performing.">
+              <div style={{ display: 'grid', gap: 10 }}>
+                {distribution.length ? distribution.map((row, index) => (
+                  <div key={row.plan} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', padding: '12px 14px', borderRadius: 16, background: 'var(--bg-hover)' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)' }}>{row.plan}</div>
+                      <div style={{ marginTop: 4, fontSize: 12, color: 'var(--text-3)' }}>{row.count} tenant{row.count === 1 ? '' : 's'}</div>
+                    </div>
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: chartColors[index % chartColors.length], flexShrink: 0 }} />
+                  </div>
+                )) : (
+                  <EmptyState
+                    icon="💳"
+                    title="No plan activity yet"
+                    subtitle="Tenants will appear here as soon as plan assignments begin."
+                    compact
                   />
-                </div>
+                )}
+              </div>
+            </Card>
+          </div>
+
+          {plans.length ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 18 }}>
+              {plans.map((plan) => (
+                <PlanCard
+                  key={plan._id}
+                  plan={plan}
+                  tenantCount={countByPlan[plan.planName] || 0}
+                  onEdit={openEdit}
+                  onDelete={(planId) => {
+                    if (window.confirm('Delete this plan? Existing tenant assignments may need follow-up.')) {
+                      deletePlanRecord(planId);
+                    }
+                  }}
+                />
               ))}
-              <div>
-                <label style={lbl}>Status</label>
-                <select
-                  value={form.planStatus}
-                  onChange={(e) => setForm({ ...form, planStatus: e.target.value })}
-                  style={inp}
-                >
-                  <option>Active</option>
-                  <option>Inactive</option>
-                </select>
-              </div>
             </div>
-
-            {/* Feature key checkboxes */}
-            <div style={{ marginBottom: 22 }}>
-              <label style={{ ...lbl, marginBottom: 12 }}>
-                Features{' '}
-                <span style={{ color: 'var(--text-2)', textTransform: 'none', letterSpacing: 0, fontWeight: 400 }}>
-                  ({form.featureList.length} selected)
-                </span>
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 8 }}>
-                {ALL_FEATURES.map(({ key, label, icon }) => {
-                  const selected = form.featureList.includes(key);
-                  return (
-                    <label
-                      key={key}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 10,
-                        cursor: 'pointer', padding: '9px 12px', borderRadius: 9,
-                        background: selected ? 'rgba(198,124,78,0.1)' : 'var(--bg-hover)',
-                        border: `1px solid ${selected ? 'rgba(198,124,78,0.4)' : 'var(--border)'}`,
-                        transition: 'background 0.12s, border-color 0.12s',
-                        userSelect: 'none',
-                      }}
-                    >
-                      <input
-                        type="checkbox" checked={selected}
-                        onChange={() => toggleFeature(key)}
-                        style={{ display: 'none' }}
-                      />
-                      {/* Custom checkbox indicator */}
-                      <span style={{
-                        width: 16, height: 16, borderRadius: 4, flexShrink: 0,
-                        border: `2px solid ${selected ? '#C67C4E' : 'var(--text-3)'}`,
-                        background: selected ? '#C67C4E' : 'transparent',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        transition: 'all 0.12s',
-                      }}>
-                        {selected && (
-                          <span style={{ color: '#fff', fontSize: 10, fontWeight: 900, lineHeight: 1 }}>✓</span>
-                        )}
-                      </span>
-                      <span style={{ fontSize: 14 }}>{icon}</span>
-                      <span style={{
-                        fontSize: 12,
-                        fontWeight: selected ? 600 : 400,
-                        color: selected ? 'var(--text-1)' : 'var(--text-2)',
-                      }}>
-                        {label}
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button
-                type="button" onClick={() => setShowForm(false)}
-                style={{ padding: '9px 18px', borderRadius: 9, border: '1px solid var(--border)', background: 'var(--bg-hover)', color: 'var(--text-2)', cursor: 'pointer', fontWeight: 600 }}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit" disabled={saving}
-                style={{ padding: '9px 18px', borderRadius: 9, border: 'none', background: '#C67C4E', color: '#fff', cursor: saving ? 'default' : 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, opacity: saving ? 0.7 : 1 }}
-              >
-                {saving ? <><Spinner size={14} /> Saving…</> : editId ? 'Update Plan' : 'Create Plan'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {loading && <PageSpinner />}
-      {error && <ErrorBanner message={error} />}
-
-      {!loading && !error && plans.length === 0 && (
-        <EmptyState icon="💳" title="No plans yet" subtitle='Click "+ New Plan" to get started.' />
-      )}
-
-      {/* ── Plan cards grid ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: 20 }}>
-        {plans.map((plan) => (
-          <PlanCard
-            key={plan._id}
-            plan={plan}
-            tenantCount={countMap[plan.planName] ?? 0}
-            onEdit={() => openEdit(plan)}
-            onDelete={() => setConfirm({ id: plan._id, name: plan.planName })}
-          />
-        ))}
-      </div>
-
-      {confirm && (
-        <ConfirmDialog
-          open
-          danger
-          title="Delete Plan"
-          message={`Delete "${confirm.name}"? This cannot be undone.`}
-          confirmLabel="Delete"
-          onConfirm={() => handleDelete(confirm.id)}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
+          ) : (
+            <Card>
+              <EmptyState
+                icon="💳"
+                title="No plans configured"
+                subtitle="Create the first plan to start packaging CafeOS as a real SaaS product."
+                actions={<Button onClick={openCreate}>Create plan</Button>}
+              />
+            </Card>
+          )}
+        </>
+      ) : null}
     </AdminLayout>
   );
 }

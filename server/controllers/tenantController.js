@@ -2,6 +2,7 @@ const Tenant = require('../models/Tenant');
 const ActivityLog = require('../models/ActivityLog');
 const User = require('../models/User');
 const Cafe = require('../models/Cafe');
+const { createNotification } = require('../services/notificationService');
 
 /* ── Credential generators ─────────────────────────────── */
 function genTenantId() {
@@ -30,6 +31,26 @@ function planExpiry(plan) {
   const months = { Free: 1, Starter: 1, Pro: 12, Enterprise: 12 };
   d.setMonth(d.getMonth() + (months[plan] || 1));
   return d;
+}
+
+function normalizeEmail(value = '') {
+  return String(value || '').trim().toLowerCase();
+}
+
+function getDuplicateKeyMessage(error) {
+  if (error?.code !== 11000) return error?.message || 'Duplicate value detected';
+
+  const duplicateField = Object.keys(error.keyPattern || {})[0] || Object.keys(error.keyValue || {})[0];
+
+  if (duplicateField === 'email') {
+    return 'A tenant already exists with this email';
+  }
+
+  if (duplicateField === 'tenantId') {
+    return 'Unable to generate a unique tenant ID. Please try again.';
+  }
+
+  return 'A record with the same unique value already exists';
 }
 
 /* ── Activity log helper ────────────────────────────────── */
@@ -93,12 +114,21 @@ const createTenant = async (req, res) => {
       subscriptionPlan = 'Free',
       adminUser = 'SuperAdmin',
     } = req.body;
+    const normalizedEmail = normalizeEmail(email);
 
-    if (!cafeName || !ownerName || !email) {
+    if (!cafeName || !ownerName || !normalizedEmail) {
       return res.status(400).json({ success: false, message: 'Cafe name, owner name, and email are required' });
     }
 
-    const existingUser = await User.findOne({ email });
+    const [existingTenant, existingUser] = await Promise.all([
+      Tenant.findOne({ email: normalizedEmail }).lean(),
+      User.findOne({ email: normalizedEmail }).lean(),
+    ]);
+
+    if (existingTenant) {
+      return res.status(400).json({ success: false, message: 'A tenant already exists with this email' });
+    }
+
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'Owner user already exists with this email' });
     }
@@ -121,6 +151,7 @@ const createTenant = async (req, res) => {
     try {
       tenant = new Tenant({
         ...req.body,
+        email: normalizedEmail,
         tenantId,
         adminEmail,
         tempPassword,
@@ -130,10 +161,10 @@ const createTenant = async (req, res) => {
       });
       await tenant.save();
 
-      cafe = await Cafe.create({ cafeName, ownerEmail: email });
+      cafe = await Cafe.create({ cafeName, ownerEmail: normalizedEmail });
       await User.create({
         name: ownerName,
-        email,
+        email: normalizedEmail,
         password: tempPassword,
         role: 'owner',
         cafeId: cafe._id,
@@ -151,13 +182,24 @@ const createTenant = async (req, res) => {
       `Tenant ${cafeName} created with ${subscriptionPlan} plan. ID: ${tenantId}`,
     );
 
+    await createNotification({
+      message: `Tenant "${cafeName}" was created on the ${subscriptionPlan} plan.`,
+      type: 'success',
+      eventType: 'tenant_created',
+      tenantId: tenant._id,
+      tenantName: cafeName,
+      link: '/admin/tenants',
+      meta: { subscriptionPlan, ownerEmail: normalizedEmail, tenantId },
+    });
+
     res.status(201).json({
       success: true,
       data: tenant,
-      credentials: { tenantId, ownerEmail: email, tempPassword },
+      credentials: { tenantId, ownerEmail: normalizedEmail, tempPassword },
     });
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    const message = getDuplicateKeyMessage(error);
+    res.status(400).json({ success: false, message });
   }
 };
 
@@ -169,13 +211,17 @@ const updateTenant = async (req, res) => {
       const expiry = planExpiry(req.body.subscriptionPlan);
       req.body.planExpiryDate = expiry;
     }
+    if (req.body.email) {
+      req.body.email = normalizeEmail(req.body.email);
+    }
     const tenant = await Tenant.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!tenant) return res.status(404).json({ success: false, message: 'Tenant not found' });
 
     await log('TENANT_UPDATED', tenant.cafeName, req.body.adminUser || 'SuperAdmin', `Tenant ${tenant.cafeName} updated.`);
     res.json({ success: true, data: tenant });
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    const message = getDuplicateKeyMessage(error);
+    res.status(400).json({ success: false, message });
   }
 };
 
