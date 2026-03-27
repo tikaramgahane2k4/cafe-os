@@ -178,6 +178,10 @@ const updateFeature = async (req, res) => {
       : `plans: [${(feature.plansEnabled || []).join(', ')}]`;
 
     await ActivityLog.create({
+      action: 'FEATURE_FLAG_UPDATED',
+      target: feature.name,
+      performedBy: req.body.adminUser || 'SuperAdmin',
+      details: `Feature "${feature.name}" updated — ${scopeSummary}.`,
       actionType: 'FEATURE_FLAG_UPDATED',
       adminUser: req.body.adminUser || 'SuperAdmin',
       targetEntity: feature.name,

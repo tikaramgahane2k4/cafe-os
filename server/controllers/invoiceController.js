@@ -86,7 +86,25 @@ const getBillingSummary = async (req, res) => {
       });
     }
 
-    res.json({ success: true, data: { mrr, revenueByPlan, trend } });
+    const churnWindowStart = new Date();
+    churnWindowStart.setDate(churnWindowStart.getDate() - 30);
+    const churnWindowEnd = new Date();
+
+    const churned = await Tenant.countDocuments({
+      status: 'Expired',
+      planExpiryDate: { $gte: churnWindowStart, $lte: churnWindowEnd },
+    });
+
+    const base = await Tenant.countDocuments({
+      $or: [
+        { subscriptionStartDate: { $lte: churnWindowStart } },
+        { subscriptionStartDate: null, createdAt: { $lte: churnWindowStart } },
+      ],
+    });
+
+    const churnRate = base > 0 ? Number(((churned / base) * 100).toFixed(1)) : 0;
+
+    res.json({ success: true, data: { mrr, revenueByPlan, trend, churnRate } });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -125,4 +143,17 @@ const seedInvoices = async (req, res) => {
   }
 };
 
-module.exports = { getInvoices, createInvoice, updateInvoice, getBillingSummary, seedInvoices };
+const cleanupInvoices = async (req, res) => {
+  try {
+    const { confirm } = req.body || {};
+    if (!confirm) {
+      return res.status(400).json({ success: false, message: 'Cleanup not confirmed.' });
+    }
+    const result = await Invoice.deleteMany({});
+    res.json({ success: true, deleted: result.deletedCount || 0 });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+module.exports = { getInvoices, createInvoice, updateInvoice, getBillingSummary, seedInvoices, cleanupInvoices };

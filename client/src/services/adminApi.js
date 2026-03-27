@@ -138,3 +138,5 @@ export const fetchBillingSummary = () => apiFetch('/admin/invoices/summary');
 
 export const seedInvoices = () => apiFetch('/admin/invoices/seed', { method: 'POST' });
 
+export const cleanupInvoices = (confirm = false) =>
+  apiFetch('/admin/invoices/cleanup', { method: 'POST', body: { confirm } });

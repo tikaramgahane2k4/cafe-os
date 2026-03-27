@@ -121,7 +121,7 @@ export default function PlanCard({ plan, onEdit, onDelete, tenantCount }) {
           padding: '8px', background: 'var(--bg-hover)', border: '1px solid var(--border)',
           borderRadius: 8, cursor: 'pointer', color: '#C67C4E', fontSize: 12, fontWeight: 600,
         }}>
-          <IconEdit width={13} height={13} /> Edit
+          <IconEdit width={13} height={13} /> Manage Plan
         </button>
         <button onClick={() => onDelete(plan._id)} style={{
           width: 34, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -134,4 +134,3 @@ export default function PlanCard({ plan, onEdit, onDelete, tenantCount }) {
     </div>
   );
 }
-

@@ -3,7 +3,7 @@ const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const Cafe = require("../models/Cafe");
 const Tenant = require("../models/Tenant");
-const Owner = require("../models/Owner");
+const Owner = require("../models/Owner"); // Legacy collection: read-only fallback for migration
 
 const generateToken = (user) => {
   // include role in JWT
@@ -84,10 +84,11 @@ const ensureTenant = async ({ cafeName, ownerName, email }) => {
 
 // POST /api/auth/signup
 const signup = async (req, res) => {
-  const { cafeName, ownerName, email, password } = req.body;
+  const { cafeName, ownerName, name, email, password } = req.body;
+  const resolvedOwnerName = ownerName || name;
   console.log("Signup body:", req.body);
   try {
-    if (!cafeName || !ownerName || !email || !password)
+    if (!cafeName || !resolvedOwnerName || !email || !password)
       return res.status(400).json({ message: "All fields are required" });
 
     if (!isStrongPassword(password)) {
@@ -101,10 +102,21 @@ const signup = async (req, res) => {
     if (existingUser)
       return res.status(400).json({ message: "Email already registered" });
 
+    const existingOwner = await Owner.findOne({ email });
+    if (existingOwner) {
+      return res.status(400).json({ message: "Email already registered" });
+    }
+
     const cafe = await Cafe.create({ cafeName, ownerEmail: email });
-    const user = await User.create({ name: ownerName, email, password, role: "owner", cafeId: cafe._id });
+    const user = await User.create({
+      name: resolvedOwnerName,
+      email,
+      password,
+      role: "owner",
+      cafeId: cafe._id,
+    });
     try {
-      await ensureTenant({ cafeName, ownerName, email });
+      await ensureTenant({ cafeName, ownerName: resolvedOwnerName, email });
     } catch (tenantErr) {
       await User.findByIdAndDelete(user._id).catch(() => {});
       await Cafe.findByIdAndDelete(cafe._id).catch(() => {});
@@ -136,7 +148,12 @@ const login = async (req, res) => {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      const isMatch = await bcrypt.compare(password, owner.password);
+      let isMatch = await bcrypt.compare(password, owner.password);
+      if (!isMatch && owner.password === password) {
+        isMatch = true;
+        owner.password = await bcrypt.hash(password, 10);
+        await owner.save();
+      }
       if (!isMatch) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
@@ -155,6 +172,7 @@ const login = async (req, res) => {
       });
 
       await ensureTenant({ cafeName: owner.cafeName, ownerName: owner.name, email });
+      await Owner.findByIdAndDelete(owner._id).catch(() => {});
     } else {
       // 3. Compare password using bcrypt (matchPassword method on User model)
       if (!(await user.matchPassword(password))) {
@@ -163,16 +181,18 @@ const login = async (req, res) => {
     }
 
     // 3. Generate JWT payload with userId and role
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    const token = generateToken(user);
 
     // 4. Return token and user info (including role)
     res.json({
       token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role }
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        cafeId: user.cafeId || null,
+      }
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

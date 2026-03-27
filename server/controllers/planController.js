@@ -56,6 +56,10 @@ const createPlan = async (req, res) => {
     const plan = new Plan(req.body);
     await plan.save();
     await ActivityLog.create({
+      action: 'PLAN_CREATED',
+      target: plan.planName,
+      performedBy: req.body.adminUser || 'SuperAdmin',
+      details: `Subscription plan "${plan.planName}" created.`,
       actionType: 'PLAN_CREATED',
       adminUser: req.body.adminUser || 'SuperAdmin',
       targetEntity: plan.planName,
@@ -113,6 +117,10 @@ const updatePlan = async (req, res) => {
     });
     if (!plan) return res.status(404).json({ success: false, message: 'Plan not found' });
     await ActivityLog.create({
+      action: 'PLAN_UPDATED',
+      target: plan.planName,
+      performedBy: req.body.adminUser || 'SuperAdmin',
+      details: `Subscription plan "${plan.planName}" updated.`,
       actionType: 'PLAN_UPDATED',
       adminUser: req.body.adminUser || 'SuperAdmin',
       targetEntity: plan.planName,
@@ -130,6 +138,10 @@ const deletePlan = async (req, res) => {
     const plan = await Plan.findByIdAndDelete(req.params.id);
     if (!plan) return res.status(404).json({ success: false, message: 'Plan not found' });
     await ActivityLog.create({
+      action: 'PLAN_DELETED',
+      target: plan.planName,
+      performedBy: 'SuperAdmin',
+      details: `Subscription plan "${plan.planName}" deleted.`,
       actionType: 'PLAN_DELETED',
       adminUser: 'SuperAdmin',
       targetEntity: plan.planName,
