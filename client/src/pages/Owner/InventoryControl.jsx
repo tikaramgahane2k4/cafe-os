@@ -15,7 +15,9 @@ import {
     Loader2
 } from 'lucide-react';
 import React, { useState, useMemo, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import api from '../../api/axios';
+import { useAuth } from '../../context/AuthContext';
 
 const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '');
 
@@ -32,6 +34,8 @@ const InventoryControl = () => {
     const [newStock, setNewStock] = useState('');
     const [editForm, setEditForm] = useState({ itemName: '', category: '', price: '' });
     const [updating, setUpdating] = useState(false);
+    const { user } = useAuth();
+    const cafeId = user?.tenantId || user?.cafeId || user?.id;
 
     useEffect(() => {
         fetchInventory();
@@ -40,7 +44,7 @@ const InventoryControl = () => {
     const fetchInventory = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/inventory');
+            const response = await api.get(`/inventory?cafeId=${cafeId}`);
             setInventory(response.data);
             setError(null);
         } catch (err) {
@@ -106,7 +110,7 @@ const InventoryControl = () => {
             setIsStockModalOpen(false);
         } catch (err) {
             console.error('Update error:', err);
-            alert('Failed to update stock');
+            toast.error('Failed to update stock');
         } finally {
             setUpdating(false);
         }
@@ -129,7 +133,7 @@ const InventoryControl = () => {
             setIsEditModalOpen(false);
         } catch (err) {
             console.error('Edit error:', err);
-            alert('Failed to update item details');
+            toast.error('Failed to update item details');
         } finally {
             setUpdating(false);
         }

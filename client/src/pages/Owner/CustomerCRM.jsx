@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import api from '../../api/axios';
+import { useAuth } from '../../context/AuthContext';
 import { Search, MapPin, Calendar, Star, History, ShoppingBag, Plus, X, Phone, Mail, Coffee } from 'lucide-react';
 
 const CustomerCRM = () => {
@@ -19,6 +21,8 @@ const CustomerCRM = () => {
     // Order data
     const [menuItems, setMenuItems] = useState([]);
     const [orderItems, setOrderItems] = useState([]);
+    const { user } = useAuth();
+    const cafeId = user?.tenantId || user?.cafeId || user?.id;
 
     const fetchCustomers = async () => {
         setLoading(true);
@@ -33,7 +37,7 @@ const CustomerCRM = () => {
 
     const fetchMenu = async () => {
         try {
-            const res = await api.get('/menu');
+            const res = await api.get(`/menu?cafeId=${cafeId}`);
             // Assuming menu API returns array of items with stock property
             if (Array.isArray(res.data)) {
                 setMenuItems(res.data.filter(item => item.stock));
@@ -64,7 +68,7 @@ const CustomerCRM = () => {
             fetchCustomers();
         } catch (error) {
             const errorMsg = error.response?.data?.message || error.message || 'Failed to add customer';
-            alert(`Error: ${errorMsg}`);
+            toast.error(`Error: ${errorMsg}`);
             console.error('Customer submit error:', error);
         }
         setSaving(false);
@@ -104,7 +108,7 @@ const CustomerCRM = () => {
             fetchCustomers(); // Refresh loyalty points
         } catch (error) {
             const errorMsg = error.response?.data?.message || error.message || 'Failed to place order';
-            alert(`Error: ${errorMsg}`);
+            toast.error(`Error: ${errorMsg}`);
             console.error('Order submit error:', error);
         }
         setSaving(false);

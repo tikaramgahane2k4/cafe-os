@@ -13,6 +13,7 @@ import { ownerRoutes } from "./ownerRoutes";
 import { adminRoutes } from "./adminRoutes";
 import LandingPage from "../pages/LandingPage/LandingPage";
 import Unauthorized from "../pages/Unauthorized";
+import TableScan from "../pages/Customer/TableScan";
 
 /**
  * Centralized Route Configuration
@@ -22,4 +23,5 @@ export const allRoutes = [
   ...adminRoutes,
   { path: "/", element: <LandingPage /> },
   { path: "/unauthorized", element: <Unauthorized /> },
+  { path: "/cafe/:cafeId/table/:tableNumber", element: <TableScan /> },
 ];

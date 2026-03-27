@@ -118,8 +118,8 @@ const signup = async (req, res) => {
     try {
       await ensureTenant({ cafeName, ownerName: resolvedOwnerName, email });
     } catch (tenantErr) {
-      await User.findByIdAndDelete(user._id).catch(() => {});
-      await Cafe.findByIdAndDelete(cafe._id).catch(() => {});
+      await User.findByIdAndDelete(user._id).catch(() => { });
+      await Cafe.findByIdAndDelete(cafe._id).catch(() => { });
       throw tenantErr;
     }
 
@@ -209,4 +209,36 @@ const getProfile = async (req, res) => {
   }
 };
 
-module.exports = { signup, login, getProfile };
+// GET /api/auth/owner/:id/locationSettings
+const getLocationSettings = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'Owner not found' });
+    res.json(user.locationSettings || { enabled: false, radius: 100 });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// PUT /api/auth/owner/:id/locationSettings
+const updateLocationSettings = async (req, res) => {
+  try {
+    const { latitude, longitude, radius, enabled } = req.body;
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'Owner not found' });
+
+    user.locationSettings = {
+      latitude: latitude !== undefined ? latitude : user.locationSettings?.latitude,
+      longitude: longitude !== undefined ? longitude : user.locationSettings?.longitude,
+      radius: radius !== undefined ? radius : (user.locationSettings?.radius || 100),
+      enabled: enabled !== undefined ? enabled : (user.locationSettings?.enabled || false)
+    };
+
+    await user.save();
+    res.json(user.locationSettings);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = { signup, login, getProfile, getLocationSettings, updateLocationSettings };

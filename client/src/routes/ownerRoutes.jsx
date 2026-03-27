@@ -9,6 +9,7 @@ import MenuManagement from '../pages/Owner/MenuManagement';
 import InventoryControl from '../pages/Owner/InventoryControl';
 import StaffManagement from '../pages/Owner/StaffManagement';
 import CustomerCRM from '../pages/Owner/CustomerCRM';
+import TableManagement from '../pages/Owner/TableManagement';
 
 export const ownerRoutes = [
   {
@@ -69,6 +70,16 @@ export const ownerRoutes = [
       <ProtectedRoute allowedRoles={["owner"]}>
         <DashboardLayout showHeader={false}>
           <CustomerCRM />
+        </DashboardLayout>
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: '/dashboard/tables',
+    element: (
+      <ProtectedRoute allowedRoles={["owner"]}>
+        <DashboardLayout showHeader={false}>
+          <TableManagement />
         </DashboardLayout>
       </ProtectedRoute>
     )

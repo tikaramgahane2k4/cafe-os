@@ -1,28 +1,28 @@
 import { NavLink } from 'react-router-dom';
 
 const C = {
-  bg: '#1B1410',
-  bgHover: '#2E1A0E',
-  active: '#3D2410',
-  accent: '#C97C3A',
-  accentLight: '#E8A94F',
-  text: '#D4B896',
-  textMuted: '#7A5A42',
-  border: '#3A2010',
+  bg: '#3A2214',
+  bgHover: '#4F311F',
+  active: '#633E28',
+  accent: '#E6A365',
+  accentLight: '#F5CB9D',
+  text: '#E0B896',
+  textMuted: '#C2916F',
+  border: '#573623',
   white: '#FFF8F0',
 };
 
 const navItems = [
-  { label: 'Dashboard',     to: '/admin/dashboard', icon: '▦' },
-  { label: 'Tenants',       to: '/admin/tenants',   icon: '🏪' },
-  { label: 'Tenant Usage',  to: '/admin/tenant-usage', icon: '📊' },
+  { label: 'Dashboard', to: '/admin/dashboard', icon: '▦' },
+  { label: 'Tenants', to: '/admin/tenants', icon: '🏪' },
+  { label: 'Tenant Usage', to: '/admin/tenant-usage', icon: '📊' },
   { label: 'Subscriptions', to: '/admin/subscriptions', icon: '💳' },
-  { label: 'Billing',       to: '/admin/billing', icon: '🧾' },
-  { label: 'Analytics',     to: '/admin/analytics', icon: '📈' },
+  { label: 'Billing', to: '/admin/billing', icon: '🧾' },
+  { label: 'Analytics', to: '/admin/analytics', icon: '📈' },
   { label: 'System Alerts', to: '/admin/alerts', icon: '🚨' },
-  { label: 'Feature Flags', to: '/admin/feature-flags',  icon: '⚑' },
-  { label: 'Users & Roles', to: '/admin/users',     icon: '👥' },
-  { label: 'Activity Logs', to: '/admin/logs',      icon: '📋' },
+  { label: 'Feature Flags', to: '/admin/feature-flags', icon: '⚑' },
+  { label: 'Users & Roles', to: '/admin/users', icon: '👥' },
+  { label: 'Activity Logs', to: '/admin/logs', icon: '📋' },
 ];
 
 function AdminSidebar() {
